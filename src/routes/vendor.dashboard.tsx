@@ -953,7 +953,7 @@ function VendorDashboardPage() {
                 icon={Banknote}
               />
               <QuickStatCard
-                label="Credit Issued"
+                label="Credit Issued · مبيعات الكارني"
                 value={`${quickStats.creditIssuedMad.toFixed(2)} MAD`}
                 icon={BookUser}
               />
