@@ -19,9 +19,12 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
+import { getCustomerCarnetBalance } from "@/lib/carnet.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { listServiceZones } from "@/lib/locations.functions";
 import { useCustomerPanelStore } from "@/lib/customer-panel-store";
+
+const CUSTOMER_SESSION_STORAGE_KEY = "bzaf.customerSession";
 
 type CustomerLayoutProps = {
   children: React.ReactNode;
@@ -38,6 +41,7 @@ export function CustomerLayout({
   const navigate = useNavigate();
   const location = useLocation();
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
+  const fetchCustomerCarnetBalance = useServerFn(getCustomerCarnetBalance);
   const fetchServiceZones = useServerFn(listServiceZones);
   const cartItems = useCustomerCartStore((state) => state.items);
   const isCartOpen = useCustomerCartStore((state) => state.isCartOpen);
@@ -51,6 +55,7 @@ export function CustomerLayout({
   const openCustomerPanel = useCustomerPanelStore((state) => state.openCustomerPanel);
   const [isProfileHubOpen, setIsProfileHubOpen] = useState(false);
   const profileHubTimerRef = useRef<number | null>(null);
+  const [customerSessionPhone, setCustomerSessionPhone] = useState<string | null>(null);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<string | null>(null);
 
   const globalSettingsQuery = useQuery({
@@ -63,6 +68,17 @@ export function CustomerLayout({
     queryKey: ["customer", "service-zones"],
     queryFn: () => fetchServiceZones(),
     staleTime: 30_000,
+  });
+
+  const customerCarnetBalanceQuery = useQuery({
+    queryKey: ["customer", "profile-hub", "carnet-balance", customerSessionPhone],
+    queryFn: () =>
+      fetchCustomerCarnetBalance({
+        data: { customerPhone: customerSessionPhone! },
+      }),
+    enabled: !!customerSessionPhone,
+    staleTime: 10_000,
+    refetchInterval: customerSessionPhone ? 8_000 : false,
   });
 
   const cartCount = useMemo(
@@ -132,6 +148,21 @@ export function CustomerLayout({
   };
 
   useEffect(() => {
+    try {
+      const raw = localStorage.getItem(CUSTOMER_SESSION_STORAGE_KEY);
+      if (!raw) {
+        setCustomerSessionPhone(null);
+        return;
+      }
+
+      const parsed = JSON.parse(raw) as { phoneNumber?: string };
+      setCustomerSessionPhone(typeof parsed?.phoneNumber === "string" ? parsed.phoneNumber : null);
+    } catch {
+      setCustomerSessionPhone(null);
+    }
+  }, [location.pathname, isCustomerAuthModalOpen]);
+
+  useEffect(() => {
     return () => {
       if (profileHubTimerRef.current) {
         window.clearTimeout(profileHubTimerRef.current);
@@ -139,7 +170,7 @@ export function CustomerLayout({
     };
   }, []);
 
-  const openProfilePanelFromHub = (view: "orders" | "account") => {
+  const openProfilePanelFromHub = (view: "orders" | "account" | "carnet") => {
     setIsProfileHubOpen(false);
     if (profileHubTimerRef.current) {
       window.clearTimeout(profileHubTimerRef.current);
@@ -247,6 +278,33 @@ export function CustomerLayout({
                   <span className="block text-sm font-semibold text-foreground">Account Settings · إعدادات الحساب</span>
                 </span>
               </button>
+
+              {customerCarnetBalanceQuery.isLoading && customerSessionPhone ? (
+                <div className="h-[78px] w-full animate-pulse rounded-xl border border-border bg-card" />
+              ) : null}
+
+              {customerCarnetBalanceQuery.data?.hasCarnet ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    openProfilePanelFromHub("carnet");
+                    const debt = Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2);
+                    window.alert(`You currently owe ${debt} MAD to your trusted vendors.`);
+                  }}
+                  className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-4 text-left transition hover:bg-muted"
+                >
+                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <BookOpen className="size-5" />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground">My Carnet · الكارني ديالي</span>
+                    <span className="block text-sm font-semibold text-destructive">
+                      Unpaid Balance: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD ·
+                      الديون: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} درهم
+                    </span>
+                  </span>
+                </button>
+              ) : null}
             </div>
           </section>
         </div>
