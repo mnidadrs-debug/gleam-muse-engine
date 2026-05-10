@@ -94,7 +94,7 @@ function VendorWalletPage() {
       });
     },
     onSuccess: async (result) => {
-      toast.success(`Cash received: ${result.settledAmountMad.toFixed(2)} MAD · تم تأكيد الاستلام`);
+      toast.success(`Net settlement confirmed: ${result.settledAmountMad.toFixed(2)} MAD · تمت تسوية الصافي`);
       setConfirmPayload(null);
       setIsScannerOpen(false);
       await Promise.all([
