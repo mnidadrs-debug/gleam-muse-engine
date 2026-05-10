@@ -41,6 +41,16 @@ import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -402,6 +412,7 @@ function AdminPage() {
   const [isUpdatingVendorState, setIsUpdatingVendorState] = useState(false);
   const [isUpdatingVendorDetails, setIsUpdatingVendorDetails] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<AdminVendorRecord | null>(null);
+  const [pendingArchiveProduct, setPendingArchiveProduct] = useState<MasterProductEntity | null>(null);
 
   const [vendorForm, setVendorForm] = useState({
     storeName: "",
@@ -1005,16 +1016,18 @@ function AdminPage() {
   };
 
   const archiveProduct = async (product: MasterProductEntity) => {
-    if (!window.confirm(`Archive ${product.name}?`)) {
-      return;
-    }
+    setPendingArchiveProduct(product);
+  };
 
+  const confirmArchiveProduct = async () => {
+    if (!pendingArchiveProduct) return;
     try {
-      await archiveMasterProductInDatabase({ data: { id: product.id } });
+      await archiveMasterProductInDatabase({ data: { id: pendingArchiveProduct.id } });
       queryClient.setQueryData(["admin", "master-products"], (current: any[] | undefined) =>
-        (current ?? []).filter((row) => row.id !== product.id),
+        (current ?? []).filter((row) => row.id !== pendingArchiveProduct.id),
       );
       toast.success("Product archived.");
+      setPendingArchiveProduct(null);
     } catch (error) {
       console.error("Failed to archive master product:", error);
       toast.error("Failed to archive product.");
@@ -2372,6 +2385,23 @@ function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(pendingArchiveProduct)} onOpenChange={(open) => (!open ? setPendingArchiveProduct(null) : undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingArchiveProduct
+                ? `Are you sure you want to archive ${pendingArchiveProduct.name}?`
+                : "Are you sure you want to archive this product?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchiveProduct}>Archive</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
