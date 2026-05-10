@@ -2385,6 +2385,23 @@ function AdminPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={Boolean(pendingArchiveProduct)} onOpenChange={(open) => (!open ? setPendingArchiveProduct(null) : undefined)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Archive product?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pendingArchiveProduct
+                ? `Are you sure you want to archive ${pendingArchiveProduct.name}?`
+                : "Are you sure you want to archive this product?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmArchiveProduct}>Archive</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </SidebarProvider>
   );
 }
