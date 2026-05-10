@@ -107,6 +107,7 @@ type DashboardOrder = {
   status: "new" | "preparing" | "ready" | "delivering" | "delivered";
   deliveryFeeMad: number;
   totalMad: number;
+  vendorShareMad: number;
   itemCount: number;
   items: Array<{ name: string; quantity: number; unitPriceMad: number; imageUrl?: string | null }>;
   createdAt: string;
@@ -436,6 +437,7 @@ function VendorDashboardPage() {
         status: row.status,
         deliveryFeeMad: Number(row.delivery_fee ?? 0),
         totalMad: Number(row.total_price ?? 0),
+        vendorShareMad: Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
         itemCount: Number(row.item_count ?? 0),
         items: Array.isArray(row.order_items) ? row.order_items : [],
         createdAt: row.created_at,
@@ -557,8 +559,8 @@ function VendorDashboardPage() {
     return {
       pendingOrders,
       completedInFilter: deliveredInFilter.length,
-      cashEarningsMad: cashOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0),
-      creditIssuedMad: carnetOrders.reduce((sum, order) => sum + Number(order.totalMad ?? 0), 0),
+      cashEarningsMad: cashOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0),
+      creditIssuedMad: carnetOrders.reduce((sum, order) => sum + Number(order.vendorShareMad ?? 0), 0),
       outstandingCreditMad,
     };
   }, [orders, queue, kpiFilter, carnetQuery.data?.carnetCustomers]);
@@ -945,7 +947,7 @@ function VendorDashboardPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <QuickStatCard label="Pending Orders" value={String(quickStats.pendingOrders)} icon={Clock3} />
               <QuickStatCard
-                label="Cash Earnings"
+                label="Cash Sales Volume · مبيعات نقداً"
                 value={`${quickStats.cashEarningsMad.toFixed(2)} MAD`}
                 tone="accent"
                 icon={Banknote}
