@@ -45,7 +45,7 @@ const vendorSettlementSummaryInputSchema = z.object({
 const settleCyclistCashHandoverInputSchema = z.object({
   vendorId: z.string().uuid(),
   cyclistId: z.string().uuid(),
-  expectedAmount: z.number().min(0),
+  expectedAmount: z.number(),
 });
 
 type VendorRow = {
@@ -431,26 +431,32 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
     try {
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("id, total_price, delivery_fee")
+        .select("id, total_price, delivery_fee, payment_method")
         .eq("vendor_id", data.vendorId)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
-        .eq("payment_method", "COD")
         .eq("vendor_settlement_status", "pending");
 
       if (pendingError) {
         throw new Error(pendingError.message);
       }
 
-      const rows = (pendingRows ?? []) as Array<{ id: string; total_price: number; delivery_fee: number }>;
-      const computedAmount = rows.reduce(
-        (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
-        0,
-      );
+      const rows = (pendingRows ?? []) as Array<{
+        id: string;
+        total_price: number;
+        delivery_fee: number;
+        payment_method: "COD" | "Carnet";
+      }>;
 
-      if (computedAmount <= 0) {
-        return { ok: true, settledAmountMad: 0, settledOrdersCount: 0 };
-      }
+      const cashToRemitMad = rows
+        .filter((row) => row.payment_method === "COD")
+        .reduce((sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0), 0);
+
+      const owedByVendorMad = rows
+        .filter((row) => row.payment_method === "Carnet")
+        .reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+
+      const computedAmount = cashToRemitMad - owedByVendorMad;
 
       if (Math.abs(computedAmount - data.expectedAmount) > 0.5) {
         throw new Error("Settlement amount mismatch. Please refresh and scan again.");
