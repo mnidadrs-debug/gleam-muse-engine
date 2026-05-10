@@ -20,6 +20,9 @@ const qrPayloadSchema = z.object({
   type: z.literal("cash_handover"),
   v: z.literal(1),
   cyclist_id: z.string().uuid(),
+  cash_to_remit: z.union([z.number(), z.string()]).optional(),
+  owed_by_vendor: z.union([z.number(), z.string()]).optional(),
+  net_amount: z.union([z.number(), z.string()]).optional(),
   amount: z.union([z.number(), z.string()]),
   issued_at: z.string().optional(),
 });
@@ -124,7 +127,9 @@ function VendorWalletPage() {
               const parsed = qrPayloadSchema.parse(JSON.parse(decodedText));
               const amount = Number(parsed.amount);
               if (!Number.isFinite(amount) || amount < 0) {
-                throw new Error("Invalid amount in QR payload.");
+                if (!Number.isFinite(amount)) {
+                  throw new Error("Invalid amount in QR payload.");
+                }
               }
 
               setConfirmPayload({ cyclistId: parsed.cyclist_id, amount });
@@ -231,7 +236,8 @@ function VendorWalletPage() {
             <DialogTitle>Confirm Cash Reception · تأكيد استلام النقود</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-muted-foreground">
-            Confirm receiving {confirmationLabel} from this cyclist? · واش كتأكد استلام {confirmationLabel} من هاد السائق؟
+            Net cash handover: {confirmationLabel}. Confirm settlement for all pending cash and carnet orders from this
+            cyclist? · الصافي للتسليم: {confirmationLabel}. واش كتأكد تسوية جميع الطلبات المعلقة كاش وكارني لهاد السائق؟
           </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmPayload(null)} disabled={settleMutation.isPending}>
