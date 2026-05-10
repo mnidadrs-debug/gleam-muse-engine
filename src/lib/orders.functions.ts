@@ -75,6 +75,7 @@ export type CustomerOrderRow = OrderRow;
 export type VendorSettlementSummary = {
   unsettledCashWithCyclistsMad: number;
   totalReceivedTodayMad: number;
+  lifetimeEarningsMad: number;
   pendingCyclistCount: number;
 };
 
@@ -348,7 +349,11 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
   .inputValidator((input) => vendorSettlementSummaryInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const [{ data: pendingRows, error: pendingError }, { data: receivedRows, error: receivedError }] = await Promise.all([
+      const [
+        { data: pendingRows, error: pendingError },
+        { data: receivedRows, error: receivedError },
+        { data: lifetimeRows, error: lifetimeError },
+      ] = await Promise.all([
         (supabaseAdmin as any)
           .from("orders")
           .select("cyclist_id, total_price, delivery_fee")
@@ -366,6 +371,12 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .eq("vendor_settlement_status", "settled")
           .gte("updated_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
           .lt("updated_at", new Date(new Date().setHours(24, 0, 0, 0)).toISOString()),
+        (supabaseAdmin as any)
+          .from("orders")
+          .select("total_price, delivery_fee")
+          .eq("vendor_id", data.vendorId)
+          .eq("status", "delivered")
+          .eq("payment_method", "COD"),
       ]);
 
       if (pendingError) {
@@ -376,8 +387,13 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         throw new Error(receivedError.message);
       }
 
+      if (lifetimeError) {
+        throw new Error(lifetimeError.message);
+      }
+
       const pending = (pendingRows ?? []) as Array<{ cyclist_id: string | null; total_price: number; delivery_fee: number }>;
       const received = (receivedRows ?? []) as Array<{ total_price: number; delivery_fee: number }>;
+      const lifetime = (lifetimeRows ?? []) as Array<{ total_price: number; delivery_fee: number }>;
 
       const unsettledCashWithCyclistsMad = pending.reduce(
         (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
@@ -389,11 +405,17 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         0,
       );
 
+      const lifetimeEarningsMad = lifetime.reduce(
+        (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
+        0,
+      );
+
       const pendingCyclistCount = new Set(pending.map((row) => row.cyclist_id).filter(Boolean)).size;
 
       return {
         unsettledCashWithCyclistsMad,
         totalReceivedTodayMad,
+        lifetimeEarningsMad,
         pendingCyclistCount,
       } satisfies VendorSettlementSummary;
     } catch (error) {
