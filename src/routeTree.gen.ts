@@ -9,38 +9,262 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as CustomerRouteImport } from './routes/customer'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CustomerIndexRouteImport } from './routes/customer.index'
+import { Route as VendorWalletRouteImport } from './routes/vendor.wallet'
+import { Route as VendorLoginRouteImport } from './routes/vendor.login'
+import { Route as VendorDashboardRouteImport } from './routes/vendor.dashboard'
+import { Route as CyclistWalletRouteImport } from './routes/cyclist.wallet'
+import { Route as CyclistLoginRouteImport } from './routes/cyclist.login'
+import { Route as CyclistDashboardRouteImport } from './routes/cyclist.dashboard'
+import { Route as CustomerFlashDealsRouteImport } from './routes/customer.flash-deals'
+import { Route as CustomerCategoriesRouteImport } from './routes/customer.categories'
+import { Route as CustomerAllProductsRouteImport } from './routes/customer.all-products'
+import { Route as CategoriesIdRouteImport } from './routes/categories.$id'
+import { Route as CustomerProductIdRouteImport } from './routes/customer.product.$id'
+import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
 
+const CustomerRoute = CustomerRouteImport.update({
+  id: '/customer',
+  path: '/customer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CustomerIndexRoute = CustomerIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => CustomerRoute,
+} as any)
+const VendorWalletRoute = VendorWalletRouteImport.update({
+  id: '/vendor/wallet',
+  path: '/vendor/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorLoginRoute = VendorLoginRouteImport.update({
+  id: '/vendor/login',
+  path: '/vendor/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VendorDashboardRoute = VendorDashboardRouteImport.update({
+  id: '/vendor/dashboard',
+  path: '/vendor/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CyclistWalletRoute = CyclistWalletRouteImport.update({
+  id: '/cyclist/wallet',
+  path: '/cyclist/wallet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CyclistLoginRoute = CyclistLoginRouteImport.update({
+  id: '/cyclist/login',
+  path: '/cyclist/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CyclistDashboardRoute = CyclistDashboardRouteImport.update({
+  id: '/cyclist/dashboard',
+  path: '/cyclist/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CustomerFlashDealsRoute = CustomerFlashDealsRouteImport.update({
+  id: '/flash-deals',
+  path: '/flash-deals',
+  getParentRoute: () => CustomerRoute,
+} as any)
+const CustomerCategoriesRoute = CustomerCategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => CustomerRoute,
+} as any)
+const CustomerAllProductsRoute = CustomerAllProductsRouteImport.update({
+  id: '/all-products',
+  path: '/all-products',
+  getParentRoute: () => CustomerRoute,
+} as any)
+const CategoriesIdRoute = CategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => CategoriesRoute,
+} as any)
+const CustomerProductIdRoute = CustomerProductIdRouteImport.update({
+  id: '/product/$id',
+  path: '/product/$id',
+  getParentRoute: () => CustomerRoute,
+} as any)
+const CustomerCategoriesIdRoute = CustomerCategoriesIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => CustomerCategoriesRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/categories': typeof CategoriesRouteWithChildren
+  '/customer': typeof CustomerRouteWithChildren
+  '/categories/$id': typeof CategoriesIdRoute
+  '/customer/all-products': typeof CustomerAllProductsRoute
+  '/customer/categories': typeof CustomerCategoriesRouteWithChildren
+  '/customer/flash-deals': typeof CustomerFlashDealsRoute
+  '/cyclist/dashboard': typeof CyclistDashboardRoute
+  '/cyclist/login': typeof CyclistLoginRoute
+  '/cyclist/wallet': typeof CyclistWalletRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/login': typeof VendorLoginRoute
+  '/vendor/wallet': typeof VendorWalletRoute
+  '/customer/': typeof CustomerIndexRoute
+  '/customer/categories/$id': typeof CustomerCategoriesIdRoute
+  '/customer/product/$id': typeof CustomerProductIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/categories': typeof CategoriesRouteWithChildren
+  '/categories/$id': typeof CategoriesIdRoute
+  '/customer/all-products': typeof CustomerAllProductsRoute
+  '/customer/categories': typeof CustomerCategoriesRouteWithChildren
+  '/customer/flash-deals': typeof CustomerFlashDealsRoute
+  '/cyclist/dashboard': typeof CyclistDashboardRoute
+  '/cyclist/login': typeof CyclistLoginRoute
+  '/cyclist/wallet': typeof CyclistWalletRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/login': typeof VendorLoginRoute
+  '/vendor/wallet': typeof VendorWalletRoute
+  '/customer': typeof CustomerIndexRoute
+  '/customer/categories/$id': typeof CustomerCategoriesIdRoute
+  '/customer/product/$id': typeof CustomerProductIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
+  '/categories': typeof CategoriesRouteWithChildren
+  '/customer': typeof CustomerRouteWithChildren
+  '/categories/$id': typeof CategoriesIdRoute
+  '/customer/all-products': typeof CustomerAllProductsRoute
+  '/customer/categories': typeof CustomerCategoriesRouteWithChildren
+  '/customer/flash-deals': typeof CustomerFlashDealsRoute
+  '/cyclist/dashboard': typeof CyclistDashboardRoute
+  '/cyclist/login': typeof CyclistLoginRoute
+  '/cyclist/wallet': typeof CyclistWalletRoute
+  '/vendor/dashboard': typeof VendorDashboardRoute
+  '/vendor/login': typeof VendorLoginRoute
+  '/vendor/wallet': typeof VendorWalletRoute
+  '/customer/': typeof CustomerIndexRoute
+  '/customer/categories/$id': typeof CustomerCategoriesIdRoute
+  '/customer/product/$id': typeof CustomerProductIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/categories'
+    | '/customer'
+    | '/categories/$id'
+    | '/customer/all-products'
+    | '/customer/categories'
+    | '/customer/flash-deals'
+    | '/cyclist/dashboard'
+    | '/cyclist/login'
+    | '/cyclist/wallet'
+    | '/vendor/dashboard'
+    | '/vendor/login'
+    | '/vendor/wallet'
+    | '/customer/'
+    | '/customer/categories/$id'
+    | '/customer/product/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/admin'
+    | '/categories'
+    | '/categories/$id'
+    | '/customer/all-products'
+    | '/customer/categories'
+    | '/customer/flash-deals'
+    | '/cyclist/dashboard'
+    | '/cyclist/login'
+    | '/cyclist/wallet'
+    | '/vendor/dashboard'
+    | '/vendor/login'
+    | '/vendor/wallet'
+    | '/customer'
+    | '/customer/categories/$id'
+    | '/customer/product/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/categories'
+    | '/customer'
+    | '/categories/$id'
+    | '/customer/all-products'
+    | '/customer/categories'
+    | '/customer/flash-deals'
+    | '/cyclist/dashboard'
+    | '/cyclist/login'
+    | '/cyclist/wallet'
+    | '/vendor/dashboard'
+    | '/vendor/login'
+    | '/vendor/wallet'
+    | '/customer/'
+    | '/customer/categories/$id'
+    | '/customer/product/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
+  CategoriesRoute: typeof CategoriesRouteWithChildren
+  CustomerRoute: typeof CustomerRouteWithChildren
+  CyclistDashboardRoute: typeof CyclistDashboardRoute
+  CyclistLoginRoute: typeof CyclistLoginRoute
+  CyclistWalletRoute: typeof CyclistWalletRoute
+  VendorDashboardRoute: typeof VendorDashboardRoute
+  VendorLoginRoute: typeof VendorLoginRoute
+  VendorWalletRoute: typeof VendorWalletRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/customer': {
+      id: '/customer'
+      path: '/customer'
+      fullPath: '/customer'
+      preLoaderRoute: typeof CustomerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/categories': {
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,22 +272,155 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/customer/': {
+      id: '/customer/'
+      path: '/'
+      fullPath: '/customer/'
+      preLoaderRoute: typeof CustomerIndexRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/vendor/wallet': {
+      id: '/vendor/wallet'
+      path: '/vendor/wallet'
+      fullPath: '/vendor/wallet'
+      preLoaderRoute: typeof VendorWalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/login': {
+      id: '/vendor/login'
+      path: '/vendor/login'
+      fullPath: '/vendor/login'
+      preLoaderRoute: typeof VendorLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vendor/dashboard': {
+      id: '/vendor/dashboard'
+      path: '/vendor/dashboard'
+      fullPath: '/vendor/dashboard'
+      preLoaderRoute: typeof VendorDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cyclist/wallet': {
+      id: '/cyclist/wallet'
+      path: '/cyclist/wallet'
+      fullPath: '/cyclist/wallet'
+      preLoaderRoute: typeof CyclistWalletRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cyclist/login': {
+      id: '/cyclist/login'
+      path: '/cyclist/login'
+      fullPath: '/cyclist/login'
+      preLoaderRoute: typeof CyclistLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cyclist/dashboard': {
+      id: '/cyclist/dashboard'
+      path: '/cyclist/dashboard'
+      fullPath: '/cyclist/dashboard'
+      preLoaderRoute: typeof CyclistDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/customer/flash-deals': {
+      id: '/customer/flash-deals'
+      path: '/flash-deals'
+      fullPath: '/customer/flash-deals'
+      preLoaderRoute: typeof CustomerFlashDealsRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/customer/categories': {
+      id: '/customer/categories'
+      path: '/categories'
+      fullPath: '/customer/categories'
+      preLoaderRoute: typeof CustomerCategoriesRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/customer/all-products': {
+      id: '/customer/all-products'
+      path: '/all-products'
+      fullPath: '/customer/all-products'
+      preLoaderRoute: typeof CustomerAllProductsRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/categories/$id': {
+      id: '/categories/$id'
+      path: '/$id'
+      fullPath: '/categories/$id'
+      preLoaderRoute: typeof CategoriesIdRouteImport
+      parentRoute: typeof CategoriesRoute
+    }
+    '/customer/product/$id': {
+      id: '/customer/product/$id'
+      path: '/product/$id'
+      fullPath: '/customer/product/$id'
+      preLoaderRoute: typeof CustomerProductIdRouteImport
+      parentRoute: typeof CustomerRoute
+    }
+    '/customer/categories/$id': {
+      id: '/customer/categories/$id'
+      path: '/$id'
+      fullPath: '/customer/categories/$id'
+      preLoaderRoute: typeof CustomerCategoriesIdRouteImport
+      parentRoute: typeof CustomerCategoriesRoute
+    }
   }
 }
 
+interface CategoriesRouteChildren {
+  CategoriesIdRoute: typeof CategoriesIdRoute
+}
+
+const CategoriesRouteChildren: CategoriesRouteChildren = {
+  CategoriesIdRoute: CategoriesIdRoute,
+}
+
+const CategoriesRouteWithChildren = CategoriesRoute._addFileChildren(
+  CategoriesRouteChildren,
+)
+
+interface CustomerCategoriesRouteChildren {
+  CustomerCategoriesIdRoute: typeof CustomerCategoriesIdRoute
+}
+
+const CustomerCategoriesRouteChildren: CustomerCategoriesRouteChildren = {
+  CustomerCategoriesIdRoute: CustomerCategoriesIdRoute,
+}
+
+const CustomerCategoriesRouteWithChildren =
+  CustomerCategoriesRoute._addFileChildren(CustomerCategoriesRouteChildren)
+
+interface CustomerRouteChildren {
+  CustomerAllProductsRoute: typeof CustomerAllProductsRoute
+  CustomerCategoriesRoute: typeof CustomerCategoriesRouteWithChildren
+  CustomerFlashDealsRoute: typeof CustomerFlashDealsRoute
+  CustomerIndexRoute: typeof CustomerIndexRoute
+  CustomerProductIdRoute: typeof CustomerProductIdRoute
+}
+
+const CustomerRouteChildren: CustomerRouteChildren = {
+  CustomerAllProductsRoute: CustomerAllProductsRoute,
+  CustomerCategoriesRoute: CustomerCategoriesRouteWithChildren,
+  CustomerFlashDealsRoute: CustomerFlashDealsRoute,
+  CustomerIndexRoute: CustomerIndexRoute,
+  CustomerProductIdRoute: CustomerProductIdRoute,
+}
+
+const CustomerRouteWithChildren = CustomerRoute._addFileChildren(
+  CustomerRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
+  CategoriesRoute: CategoriesRouteWithChildren,
+  CustomerRoute: CustomerRouteWithChildren,
+  CyclistDashboardRoute: CyclistDashboardRoute,
+  CyclistLoginRoute: CyclistLoginRoute,
+  CyclistWalletRoute: CyclistWalletRoute,
+  VendorDashboardRoute: VendorDashboardRoute,
+  VendorLoginRoute: VendorLoginRoute,
+  VendorWalletRoute: VendorWalletRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

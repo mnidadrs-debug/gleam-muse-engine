@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -7,7 +8,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { I18nextProvider } from "react-i18next";
 
+import i18n, { LANGUAGE_STORAGE_KEY } from "@/lib/i18n";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -71,15 +74,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      {
+        name: "viewport",
+        content:
+          "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover",
+      },
       { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
+      { name: "description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
       { name: "author", content: "Lovable" },
       { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { property: "og:description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
+      { name: "twitter:title", content: "Lovable App" },
+      { name: "twitter:description", content: "Morocco Wheels Delivery is a mobile-first web app for eco-friendly grocery delivery." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0aa679a-5a7d-45be-96be-4133106ca193/id-preview-a42e8497--d3fabfd6-6e10-4019-b625-dad909d25879.lovable.app-1778348262460.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/b0aa679a-5a7d-45be-96be-4133106ca193/id-preview-a42e8497--d3fabfd6-6e10-4019-b625-dad909d25879.lovable.app-1778348262460.png" },
     ],
     links: [
       {
@@ -111,9 +122,27 @@ function RootShell({ children }: { children: React.ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    const applyLanguageDirection = (language: string) => {
+      const nextLang = language === "ar" ? "ar" : language === "fr" ? "fr" : "en";
+      document.documentElement.lang = nextLang;
+      document.documentElement.dir = nextLang === "ar" ? "rtl" : "ltr";
+      window.localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLang);
+    };
+
+    applyLanguageDirection(i18n.resolvedLanguage || i18n.language);
+    i18n.on("languageChanged", applyLanguageDirection);
+
+    return () => {
+      i18n.off("languageChanged", applyLanguageDirection);
+    };
+  }, []);
+
   return (
-    <QueryClientProvider client={queryClient}>
-      <Outlet />
-    </QueryClientProvider>
+    <I18nextProvider i18n={i18n}>
+      <QueryClientProvider client={queryClient}>
+        <Outlet />
+      </QueryClientProvider>
+    </I18nextProvider>
   );
 }
