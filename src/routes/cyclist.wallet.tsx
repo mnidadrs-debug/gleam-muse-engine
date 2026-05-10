@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, HandCoins, Wallet } from "lucide-react";
+import { ArrowLeft, HandCoins, History, Wallet } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { toast } from "sonner";
 
@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { getCyclistWalletSummary } from "@/lib/cyclists.functions";
+import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclists.functions";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
 
@@ -20,6 +20,8 @@ type CyclistSession = {
   phoneNumber: string;
 };
 
+type EarningsPeriod = "today" | "week" | "month";
+
 export const Route = createFileRoute("/cyclist/wallet")({
   component: CyclistWalletPage,
 });
@@ -28,6 +30,7 @@ function CyclistWalletPage() {
   const navigate = useNavigate({ from: "/cyclist/wallet" });
   const queryClient = useQueryClient();
   const [isQrOpen, setIsQrOpen] = useState(false);
+  const [earningsPeriod, setEarningsPeriod] = useState<EarningsPeriod>("today");
   const [session] = useState<CyclistSession | null>(() => {
     if (typeof window === "undefined") return null;
     try {
@@ -40,11 +43,25 @@ function CyclistWalletPage() {
   });
 
   const fetchWalletSummary = useServerFn(getCyclistWalletSummary);
+  const fetchEarningsHistory = useServerFn(getCyclistEarningsHistory);
 
   const walletQuery = useQuery({
     queryKey: ["cyclist", "wallet", session?.cyclistId ?? null],
     enabled: Boolean(session?.cyclistId),
     queryFn: () => fetchWalletSummary({ data: { cyclistId: session!.cyclistId } }),
+    refetchInterval: 4_000,
+  });
+
+  const earningsHistoryQuery = useQuery({
+    queryKey: ["cyclist", "wallet", "earnings-history", session?.cyclistId ?? null, earningsPeriod],
+    enabled: Boolean(session?.cyclistId),
+    queryFn: () =>
+      fetchEarningsHistory({
+        data: {
+          cyclistId: session!.cyclistId,
+          period: earningsPeriod,
+        },
+      }),
     refetchInterval: 4_000,
   });
 
@@ -64,6 +81,7 @@ function CyclistWalletPage() {
         () => {
           void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", session.cyclistId] });
           void queryClient.invalidateQueries({ queryKey: ["cyclist", "dashboard", session.cyclistId] });
+          void queryClient.invalidateQueries({ queryKey: ["cyclist", "wallet", "earnings-history", session.cyclistId] });
         },
       )
       .subscribe();
@@ -89,6 +107,26 @@ function CyclistWalletPage() {
   }
 
   const summary = walletQuery.data;
+  const earningsHistory = earningsHistoryQuery.data;
+
+  const periodLabels: Array<{ value: EarningsPeriod; label: string }> = [
+    { value: "today", label: "Today · اليوم" },
+    { value: "week", label: "This Week · هذا الأسبوع" },
+    { value: "month", label: "This Month · هذا الشهر" },
+  ];
+
+  const formatOrderDateTime = (value: string) => {
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return "-";
+    return date.toLocaleString("fr-MA", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   const qrPayload = JSON.stringify({
     type: "cash_handover",
     v: 1,
@@ -148,6 +186,57 @@ function CyclistWalletPage() {
             >
               Handover Cash · تسليم النقود
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="space-y-3 pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <History className="size-4 text-primary" />
+              Earnings History · سجل الأرباح
+            </CardTitle>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {periodLabels.map((period) => (
+                <Button
+                  key={period.value}
+                  type="button"
+                  size="sm"
+                  variant={earningsPeriod === period.value ? "default" : "outline"}
+                  onClick={() => setEarningsPeriod(period.value)}
+                >
+                  {period.label}
+                </Button>
+              ))}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-xs text-muted-foreground">Total Delivery Fees · مجموع رسوم التوصيل</p>
+              <p className="text-2xl font-semibold">{(earningsHistory?.totalEarningsMad ?? 0).toFixed(2)} MAD</p>
+            </div>
+
+            <div className="space-y-2 rounded-lg border border-border p-2">
+              <p className="text-xs text-muted-foreground">Completed Deliveries · الطلبات المكتملة</p>
+              <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
+                {(earningsHistory?.deliveries?.length ?? 0) === 0 ? (
+                  <p className="py-3 text-center text-xs text-muted-foreground">
+                    No deliveries for this period. · لا توجد عمليات توصيل في هذه الفترة.
+                  </p>
+                ) : (
+                  earningsHistory!.deliveries.map((delivery) => (
+                    <div key={delivery.orderId} className="rounded-md border border-border bg-background px-3 py-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-medium">Order #{delivery.orderId.slice(0, 8)}</p>
+                          <p className="text-[11px] text-muted-foreground">{formatOrderDateTime(delivery.deliveredAt)}</p>
+                        </div>
+                        <p className="shrink-0 text-sm font-semibold text-primary">+ {delivery.deliveryFeeMad.toFixed(2)} MAD</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
