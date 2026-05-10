@@ -549,7 +549,7 @@ function VendorDashboardPage() {
         order.status === "delivered" &&
         inKpiWindow(order.createdAt),
     );
-    const cashOrders = deliveredInFilter.filter((order) => order.paymentMethod !== "Carnet");
+    const cashOrders = deliveredInFilter.filter((order) => order.paymentMethod === "COD");
     const carnetOrders = deliveredInFilter.filter((order) => order.paymentMethod === "Carnet");
     const outstandingCreditMad = (carnetQuery.data?.carnetCustomers ?? []).reduce(
       (sum, customer) => sum + Number(customer.currentDebt ?? 0),
