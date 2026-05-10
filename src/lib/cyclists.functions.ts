@@ -126,8 +126,12 @@ export type CyclistWalletSummary = {
   };
   myEarningsMad: number;
   cashToRemitMad: number;
+  owedByVendorMad: number;
+  netCashToHandoverMad: number;
   deliveredTodayCount: number;
   pendingSettlementOrdersCount: number;
+  pendingCashSettlementOrdersCount: number;
+  pendingCarnetSettlementOrdersCount: number;
 };
 
 export type EarningsHistoryPeriod = "today" | "week" | "month";
@@ -576,7 +580,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
 
       const { data: pendingSettlementRows, error: pendingSettlementError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("delivery_fee, total_price")
+        .select("delivery_fee, total_price, payment_method")
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
         .eq("vendor_settlement_status", "pending");
@@ -592,13 +596,19 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
       const pendingRows = (pendingSettlementRows ?? []) as Array<{
         total_price: number;
         delivery_fee: number;
+        payment_method: "COD" | "Carnet";
       }>;
 
       const myEarningsMad = todayRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const cashToRemitMad = pendingRows.reduce(
+      const pendingCashRows = pendingRows.filter((row) => row.payment_method === "COD");
+      const pendingCarnetRows = pendingRows.filter((row) => row.payment_method === "Carnet");
+
+      const cashToRemitMad = pendingCashRows.reduce(
         (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
         0,
       );
+      const owedByVendorMad = pendingCarnetRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const netCashToHandoverMad = cashToRemitMad - owedByVendorMad;
 
       return {
         cyclist: {
@@ -607,8 +617,12 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         },
         myEarningsMad,
         cashToRemitMad,
+        owedByVendorMad,
+        netCashToHandoverMad,
         deliveredTodayCount: todayRows.length,
         pendingSettlementOrdersCount: pendingRows.length,
+        pendingCashSettlementOrdersCount: pendingCashRows.length,
+        pendingCarnetSettlementOrdersCount: pendingCarnetRows.length,
       } satisfies CyclistWalletSummary;
     } catch (error) {
       console.error("getCyclistWalletSummary failed:", error);
