@@ -48,6 +48,10 @@ const getCustomerCarnetOverviewInputSchema = z.object({
   customerPhone: moroccoPhoneSchema,
 });
 
+const getCustomerCarnetBalanceInputSchema = z.object({
+  customerPhone: moroccoPhoneSchema,
+});
+
 type VendorCarnetRow = {
   id: string;
   customer_phone: string;
@@ -571,5 +575,34 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
     } catch (error) {
       console.error("getCustomerCarnetOverview failed:", error);
       throw new Error(error instanceof Error ? error.message : "Failed to load your carnet.");
+    }
+  });
+
+export const getCustomerCarnetBalance = createServerFn({ method: "POST" })
+  .inputValidator((input) => getCustomerCarnetBalanceInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("vendor_carnet")
+        .select("current_debt")
+        .eq("customer_phone", data.customerPhone)
+        .eq("status", "active");
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const totalDebtMad = (rows ?? []).reduce(
+        (sum: number, row: { current_debt?: number | null }) => sum + Number(row.current_debt ?? 0),
+        0,
+      );
+
+      return {
+        hasCarnet: totalDebtMad > 0,
+        totalDebtMad,
+      };
+    } catch (error) {
+      console.error("getCustomerCarnetBalance failed:", error);
+      throw new Error("Failed to load carnet balance.");
     }
   });
