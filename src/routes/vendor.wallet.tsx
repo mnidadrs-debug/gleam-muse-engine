@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, QrCode, Wallet } from "lucide-react";
+import { ArrowLeft, QrCode, Trophy, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { z } from "zod";
 
@@ -200,6 +200,18 @@ function VendorWalletPage() {
               <QrCode className="size-4" />
               Receive Cash / Scan QR · استلام النقود / مسح الرمز
             </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Trophy className="size-4 text-primary" />
+              Lifetime Earnings · إجمالي الأرباح منذ البداية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{(summary?.lifetimeEarningsMad ?? 0).toFixed(2)} MAD</p>
           </CardContent>
         </Card>
       </div>
