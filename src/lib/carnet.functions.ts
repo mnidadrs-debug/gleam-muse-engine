@@ -598,7 +598,7 @@ export const getCustomerCarnetBalance = createServerFn({ method: "POST" })
       );
 
       return {
-        hasCarnet: totalDebtMad > 0,
+        hasCarnet: (rows ?? []).length > 0,
         totalDebtMad,
       };
     } catch (error) {
