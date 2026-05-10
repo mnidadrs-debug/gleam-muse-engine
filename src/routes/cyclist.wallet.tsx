@@ -131,7 +131,10 @@ function CyclistWalletPage() {
     type: "cash_handover",
     v: 1,
     cyclist_id: session.cyclistId,
-    amount: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
+    cash_to_remit: Number(summary?.cashToRemitMad ?? 0).toFixed(2),
+    owed_by_vendor: Number(summary?.owedByVendorMad ?? 0).toFixed(2),
+    net_amount: Number(summary?.netCashToHandoverMad ?? 0).toFixed(2),
+    amount: Number(summary?.netCashToHandoverMad ?? 0).toFixed(2),
     issued_at: new Date().toISOString(),
   });
 
@@ -166,18 +169,33 @@ function CyclistWalletPage() {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
               <HandCoins className="size-4 text-primary" />
+              Owed by Vendor · مستحقاتي على البائع
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{(summary?.owedByVendorMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">
+              Pending carnet delivery fees: {summary?.pendingCarnetSettlementOrdersCount ?? 0}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HandCoins className="size-4 text-primary" />
               Cash to Remit · الروسيطة للبائع
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <p className="text-2xl font-semibold">{(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
             <p className="text-xs text-muted-foreground">
-              Pending settlement orders: {summary?.pendingSettlementOrdersCount ?? 0}
+              Pending cash orders: {summary?.pendingCashSettlementOrdersCount ?? 0}
             </p>
             <Button
               className="w-full"
               onClick={() => {
-                if ((summary?.cashToRemitMad ?? 0) <= 0) {
+                if ((summary?.pendingSettlementOrdersCount ?? 0) <= 0) {
                   toast.info("No pending cash to hand over. · ما كايناش فلوس معلقة دابا");
                   return;
                 }
@@ -247,10 +265,17 @@ function CyclistWalletPage() {
             <DialogTitle>Cash Handover QR · رمز تسليم النقود</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 text-center">
+            <div className="rounded-lg border border-border bg-muted/40 p-3">
+              <p className="text-xs text-muted-foreground">Net Cash to Handover · الصافي لتسليمه</p>
+              <p className="text-xl font-semibold">{(summary?.netCashToHandoverMad ?? 0).toFixed(2)} MAD</p>
+              <p className="text-[11px] text-muted-foreground">
+                Cash to remit - Owed by vendor (carnet delivery fees).
+              </p>
+            </div>
             <div className="mx-auto w-fit rounded-xl border border-border bg-white p-3">
               <QRCodeSVG value={qrPayload} size={220} level="M" includeMargin />
             </div>
-            <p className="text-sm font-medium">Amount: {(summary?.cashToRemitMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-sm font-medium">Net Amount: {(summary?.netCashToHandoverMad ?? 0).toFixed(2)} MAD</p>
             <p className="text-xs text-muted-foreground">Show this QR to vendor for settlement confirmation.</p>
           </div>
         </DialogContent>
