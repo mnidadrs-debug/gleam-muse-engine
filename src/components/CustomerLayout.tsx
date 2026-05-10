@@ -15,6 +15,7 @@ import {
   ClipboardList,
   User,
   Gift,
+  BookOpen,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
