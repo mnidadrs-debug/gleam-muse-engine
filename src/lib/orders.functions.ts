@@ -354,6 +354,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .select("cyclist_id, total_price, delivery_fee")
           .eq("vendor_id", data.vendorId)
           .eq("status", "delivered")
+          .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "pending")
           .not("cyclist_id", "is", null),
         (supabaseAdmin as any)
@@ -361,6 +362,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .select("total_price, delivery_fee")
           .eq("vendor_id", data.vendorId)
           .eq("status", "delivered")
+          .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled")
           .gte("updated_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString())
           .lt("updated_at", new Date(new Date().setHours(24, 0, 0, 0)).toISOString()),
@@ -410,6 +412,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
         .eq("vendor_id", data.vendorId)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
+        .eq("payment_method", "COD")
         .eq("vendor_settlement_status", "pending");
 
       if (pendingError) {
