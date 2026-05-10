@@ -376,7 +376,8 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
           .select("total_price, delivery_fee")
           .eq("vendor_id", data.vendorId)
           .eq("status", "delivered")
-          .eq("payment_method", "COD"),
+          .eq("payment_method", "COD")
+          .eq("vendor_settlement_status", "settled"),
       ]);
 
       if (pendingError) {
