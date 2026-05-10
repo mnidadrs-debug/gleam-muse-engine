@@ -24,6 +24,11 @@ const cyclistWalletInputSchema = z.object({
   cyclistId: z.string().uuid(),
 });
 
+const cyclistEarningsHistoryInputSchema = z.object({
+  cyclistId: z.string().uuid(),
+  period: z.enum(["today", "week", "month"]),
+});
+
 const setCyclistActiveStateInputSchema = z.object({
   cyclistId: z.string().uuid(),
   isActive: z.boolean(),
@@ -123,6 +128,20 @@ export type CyclistWalletSummary = {
   cashToRemitMad: number;
   deliveredTodayCount: number;
   pendingSettlementOrdersCount: number;
+};
+
+export type EarningsHistoryPeriod = "today" | "week" | "month";
+
+export type CyclistEarningsHistoryEntry = {
+  orderId: string;
+  deliveredAt: string;
+  deliveryFeeMad: number;
+};
+
+export type CyclistEarningsHistoryResponse = {
+  period: EarningsHistoryPeriod;
+  totalEarningsMad: number;
+  deliveries: CyclistEarningsHistoryEntry[];
 };
 
 async function buildServiceZoneMaps() {
@@ -543,26 +562,39 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
       const endOfDay = new Date(startOfDay);
       endOfDay.setDate(endOfDay.getDate() + 1);
 
-      const { data: deliveredRows, error: deliveredError } = await (supabaseAdmin as any)
+      const { data: deliveredTodayRows, error: deliveredTodayError } = await (supabaseAdmin as any)
         .from("orders")
-        .select("delivery_fee, total_price, vendor_settlement_status")
+        .select("delivery_fee")
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
         .gte("delivered_at", startOfDay.toISOString())
         .lt("delivered_at", endOfDay.toISOString());
 
-      if (deliveredError) {
-        throw new Error(deliveredError.message);
+      if (deliveredTodayError) {
+        throw new Error(deliveredTodayError.message);
       }
 
-      const rows = (deliveredRows ?? []) as Array<{
+      const { data: pendingSettlementRows, error: pendingSettlementError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("delivery_fee, total_price")
+        .eq("cyclist_id", data.cyclistId)
+        .eq("status", "delivered")
+        .eq("vendor_settlement_status", "pending");
+
+      if (pendingSettlementError) {
+        throw new Error(pendingSettlementError.message);
+      }
+
+      const todayRows = (deliveredTodayRows ?? []) as Array<{
         delivery_fee: number;
-        total_price: number;
-        vendor_settlement_status?: "pending" | "settled";
       }>;
 
-      const myEarningsMad = rows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
-      const pendingRows = rows.filter((row) => (row.vendor_settlement_status ?? "pending") === "pending");
+      const pendingRows = (pendingSettlementRows ?? []) as Array<{
+        total_price: number;
+        delivery_fee: number;
+      }>;
+
+      const myEarningsMad = todayRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const cashToRemitMad = pendingRows.reduce(
         (sum, row) => sum + Math.max(Number(row.total_price ?? 0) - Number(row.delivery_fee ?? 0), 0),
         0,
@@ -575,12 +607,74 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         },
         myEarningsMad,
         cashToRemitMad,
-        deliveredTodayCount: rows.length,
+        deliveredTodayCount: todayRows.length,
         pendingSettlementOrdersCount: pendingRows.length,
       } satisfies CyclistWalletSummary;
     } catch (error) {
       console.error("getCyclistWalletSummary failed:", error);
       throw new Error("Failed to load cyclist wallet summary.");
+    }
+  });
+
+export const getCyclistEarningsHistory = createServerFn({ method: "POST" })
+  .inputValidator((input) => cyclistEarningsHistoryInputSchema.parse(input))
+  .handler(async ({ data }) => {
+    try {
+      const { data: cyclist, error: cyclistError } = await (supabaseAdmin as any)
+        .from("cyclists")
+        .select("id")
+        .eq("id", data.cyclistId)
+        .single();
+
+      if (cyclistError || !cyclist?.id) {
+        throw new Error(cyclistError?.message ?? "Cyclist not found.");
+      }
+
+      const now = new Date();
+      const start = new Date(now);
+
+      if (data.period === "today") {
+        start.setHours(0, 0, 0, 0);
+      } else if (data.period === "week") {
+        start.setHours(0, 0, 0, 0);
+        const currentDay = start.getDay();
+        const diffToMonday = (currentDay + 6) % 7;
+        start.setDate(start.getDate() - diffToMonday);
+      } else {
+        start.setHours(0, 0, 0, 0);
+        start.setDate(1);
+      }
+
+      const { data: rows, error } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id, delivered_at, delivery_fee")
+        .eq("cyclist_id", data.cyclistId)
+        .eq("status", "delivered")
+        .gte("delivered_at", start.toISOString())
+        .order("delivered_at", { ascending: false });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      const deliveries = ((rows ?? []) as Array<{ id: string; delivered_at: string | null; delivery_fee: number }>).map(
+        (row) => ({
+          orderId: row.id,
+          deliveredAt: row.delivered_at ?? new Date(0).toISOString(),
+          deliveryFeeMad: Number(row.delivery_fee ?? 0),
+        }),
+      );
+
+      const totalEarningsMad = deliveries.reduce((sum, row) => sum + row.deliveryFeeMad, 0);
+
+      return {
+        period: data.period,
+        totalEarningsMad,
+        deliveries,
+      } satisfies CyclistEarningsHistoryResponse;
+    } catch (error) {
+      console.error("getCyclistEarningsHistory failed:", error);
+      throw new Error("Failed to load cyclist earnings history.");
     }
   });
 
