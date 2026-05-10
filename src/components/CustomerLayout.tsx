@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getCustomerCarnetBalance } from "@/lib/carnet.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
@@ -55,6 +56,7 @@ export function CustomerLayout({
   const customerPanelView = useCustomerPanelStore((state) => state.customerPanelView);
   const openCustomerPanel = useCustomerPanelStore((state) => state.openCustomerPanel);
   const [isProfileHubOpen, setIsProfileHubOpen] = useState(false);
+  const [isCarnetDialogOpen, setIsCarnetDialogOpen] = useState(false);
   const profileHubTimerRef = useRef<number | null>(null);
   const [customerSessionPhone, setCustomerSessionPhone] = useState<string | null>(null);
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState<string | null>(null);
@@ -288,21 +290,19 @@ export function CustomerLayout({
                 <button
                   type="button"
                   onClick={() => {
-                    openProfilePanelFromHub("carnet");
-                    const debt = Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2);
-                    window.alert(`You currently owe ${debt} MAD to your trusted vendors.`);
+                    setIsProfileHubOpen(false);
+                    setIsCarnetDialogOpen(true);
                   }}
                   className="flex w-full items-center gap-3 rounded-xl border border-border bg-card px-4 py-4 text-left transition hover:bg-muted"
                 >
                   <span className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <BookOpen className="size-5" />
                   </span>
-                  <span className="min-w-0">
+                  <span className="min-w-0 flex-1 flex-col">
                     <span className="block text-sm font-semibold text-foreground">My Carnet · الكارني ديالي</span>
-                    <span className="block text-sm font-semibold text-destructive">
-                      Unpaid Balance: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD ·
-                      الديون: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} درهم
-                    </span>
+                    <div className="text-red-500 font-semibold text-sm mt-1">
+                      Debt: {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD
+                    </div>
                   </span>
                 </button>
               ) : null}
