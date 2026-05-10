@@ -430,6 +430,24 @@ export function CustomerLayout({
           </aside>
         </div>
       ) : null}
+
+      <Dialog open={isCarnetDialogOpen} onOpenChange={setIsCarnetDialogOpen}>
+        <DialogContent className="w-[95vw] max-w-sm rounded-2xl border-border bg-background/95 backdrop-blur-sm">
+          <DialogHeader>
+            <DialogTitle>Carnet Details · تفاصيل الكارني</DialogTitle>
+            <DialogDescription>
+              Your current unpaid balance across trusted vendors is {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD.
+              <br />
+              مجموع ديونك الحالية هو {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} درهم.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button className="w-full" onClick={() => setIsCarnetDialogOpen(false)}>
+              Understood / Close · حسناً / إغلاق
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
