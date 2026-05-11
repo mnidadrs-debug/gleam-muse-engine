@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlertTriangle, Bike, Camera, CheckCircle2, Keyboard, LogOut, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
+import { AlertTriangle, Bike, Camera, CheckCircle2, Keyboard, Lock, LogOut, PackageSearch, PhoneCall, Truck, Volume2, VolumeX, Wallet } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -93,6 +93,7 @@ function CyclistDashboardPage() {
   const cyclist = dashboardQuery.data?.cyclist;
   const availableRuns = dashboardQuery.data?.availableRuns ?? [];
   const activeDeliveries = dashboardQuery.data?.activeDeliveries ?? [];
+  const hasActiveDeliveryLock = activeDeliveries.length > 0;
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -465,7 +466,14 @@ function CyclistDashboardPage() {
 
         {activeView === "available" ? (
           <div className="space-y-3">
-            {availableRuns.length === 0 ? (
+            {hasActiveDeliveryLock ? (
+              <AppEmptyState
+                title="Finish your current run! (كمل التوصيلة اللي فـ يدك أولاً!)"
+                subtitle="You have an active delivery in progress. Complete it to unlock new available runs."
+                icon={Lock}
+                className="bg-card"
+              />
+            ) : availableRuns.length === 0 ? (
               <EmptyState label="No ready deliveries in your neighborhood right now." />
             ) : (
               availableRuns.map((order) => (

@@ -410,7 +410,11 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
         throw new Error(deliveredError.message);
       }
 
-      const allRows = [...((availableRows ?? []) as OrderRow[]), ...((activeRows ?? []) as OrderRow[])];
+      const activeOrderRows = (activeRows ?? []) as OrderRow[];
+      const shouldLockAvailableRuns = activeOrderRows.length > 0;
+      const safeAvailableRows = shouldLockAvailableRuns ? [] : ((availableRows ?? []) as OrderRow[]);
+
+      const allRows = [...safeAvailableRows, ...activeOrderRows];
       const uniquePhones = Array.from(new Set(allRows.map((row) => row.customer_phone).filter(Boolean)));
 
       const { data: customers, error: customersError } = uniquePhones.length
@@ -461,8 +465,8 @@ export const getCyclistDashboardData = createServerFn({ method: "POST" })
           isActive: Boolean(cyclist.is_active),
           coverageNeighborhoodIds,
         },
-        availableRuns: ((availableRows ?? []) as OrderRow[]).map(mapOrder),
-        activeDeliveries: ((activeRows ?? []) as OrderRow[]).map(mapOrder),
+        availableRuns: safeAvailableRows.map(mapOrder),
+        activeDeliveries: activeOrderRows.map(mapOrder),
         totalCashCollectedMad,
       };
     } catch (error) {
@@ -495,6 +499,20 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
   .inputValidator((input) => acceptDeliveryInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const { count: activeOrderCount, error: activeOrderCountError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("cyclist_id", data.cyclistId)
+        .in("status", ["ready", "delivering"]);
+
+      if (activeOrderCountError) {
+        throw new Error(activeOrderCountError.message);
+      }
+
+      if ((activeOrderCount ?? 0) > 0) {
+        throw new Error("You must finish your current delivery first.");
+      }
+
       const { data: cyclist, error: cyclistError } = await (supabaseAdmin as any)
         .from("cyclists")
         .select("id")
