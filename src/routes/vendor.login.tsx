@@ -8,11 +8,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import { Label } from "@/components/ui/label";
+import { createOtpRequest, verifyOtpCode } from "@/lib/customers.functions";
 import {
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import { useServerFn } from "@tanstack/react-start";
 import { persistRoleSession } from "@/lib/operational-auth";
 
 type VendorLoginStep = "phone" | "otp";
@@ -41,9 +43,12 @@ export const Route = createFileRoute("/vendor/login")({
 
 function VendorLoginPage() {
   const navigate = useNavigate({ from: "/vendor/login" });
+  const requestOtp = useServerFn(createOtpRequest);
+  const verifyOtp = useServerFn(verifyOtpCode);
   const [step, setStep] = useState<VendorLoginStep>("phone");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [otpCode, setOtpCode] = useState("");
+  const [phoneForOtp, setPhoneForOtp] = useState("");
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -59,20 +64,21 @@ function VendorLoginPage() {
     setIsSendingCode(true);
     try {
       const fullPhoneNumber = formatMoroccoPhoneForPayload(normalizedPhone);
+      const otpPayload = await requestOtp({ data: { phoneNumber: fullPhoneNumber } });
 
-      const response = await fetch(OTP_WEBHOOK_URL, {
+      setPhoneForOtp(fullPhoneNumber);
+
+      const generatedOtp = otpPayload.otpCode;
+      await fetch(OTP_WEBHOOK_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          phoneNumber: fullPhoneNumber,
+          phoneNumber: otpPayload.phoneNumber,
+          otpCode: generatedOtp,
         }),
       });
-
-      if (!response.ok) {
-        throw new Error(`Webhook request failed with status ${response.status}`);
-      }
 
       toast.success("Code sent on WhatsApp.");
       setStep("otp");
@@ -91,11 +97,21 @@ function VendorLoginPage() {
 
     setIsVerifying(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      const verified = await verifyOtp({
+        data: {
+          phoneNumber: phoneForOtp,
+          otpCode,
+        },
+      });
+
+      if (!verified.verified) {
+        toast.error("Wrong code.");
+        return;
+      }
 
       toast.success("Verified successfully. Welcome back!");
       persistRoleSession("vendor", {
-        phoneNumber: formatMoroccoPhoneForPayload(normalizedPhone),
+        phoneNumber: phoneForOtp,
       });
       await navigate({ to: "/vendor/dashboard" });
     } finally {
