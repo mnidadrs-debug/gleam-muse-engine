@@ -125,10 +125,10 @@ export type CyclistWalletSummary = {
     fullName: string;
   };
   myEarningsMad: number;
+  pendingEarningsMad: number;
   cashToRemitMad: number;
   owedByVendorMad: number;
   netCashToHandoverMad: number;
-  deliveredTodayCount: number;
   pendingSettlementOrdersCount: number;
   pendingCashSettlementOrdersCount: number;
   pendingCarnetSettlementOrdersCount: number;
@@ -561,21 +561,14 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         throw new Error(cyclistError?.message ?? "Cyclist not found.");
       }
 
-      const startOfDay = new Date();
-      startOfDay.setHours(0, 0, 0, 0);
-      const endOfDay = new Date(startOfDay);
-      endOfDay.setDate(endOfDay.getDate() + 1);
-
-      const { data: deliveredTodayRows, error: deliveredTodayError } = await (supabaseAdmin as any)
+      const { data: deliveredRows, error: deliveredError } = await (supabaseAdmin as any)
         .from("orders")
         .select("delivery_fee")
         .eq("cyclist_id", data.cyclistId)
-        .eq("status", "delivered")
-        .gte("delivered_at", startOfDay.toISOString())
-        .lt("delivered_at", endOfDay.toISOString());
+        .eq("status", "delivered");
 
-      if (deliveredTodayError) {
-        throw new Error(deliveredTodayError.message);
+      if (deliveredError) {
+        throw new Error(deliveredError.message);
       }
 
       const { data: pendingSettlementRows, error: pendingSettlementError } = await (supabaseAdmin as any)
@@ -589,7 +582,7 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         throw new Error(pendingSettlementError.message);
       }
 
-      const todayRows = (deliveredTodayRows ?? []) as Array<{
+      const lifetimeRows = (deliveredRows ?? []) as Array<{
         delivery_fee: number;
       }>;
 
@@ -599,7 +592,8 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
         payment_method: "COD" | "Carnet";
       }>;
 
-      const myEarningsMad = todayRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const myEarningsMad = lifetimeRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
+      const pendingEarningsMad = pendingRows.reduce((sum, row) => sum + Number(row.delivery_fee ?? 0), 0);
       const pendingCashRows = pendingRows.filter((row) => row.payment_method === "COD");
       const pendingCarnetRows = pendingRows.filter((row) => row.payment_method === "Carnet");
 
@@ -616,10 +610,10 @@ export const getCyclistWalletSummary = createServerFn({ method: "POST" })
           fullName: cyclist.full_name as string,
         },
         myEarningsMad,
+        pendingEarningsMad,
         cashToRemitMad,
         owedByVendorMad,
         netCashToHandoverMad,
-        deliveredTodayCount: todayRows.length,
         pendingSettlementOrdersCount: pendingRows.length,
         pendingCashSettlementOrdersCount: pendingCashRows.length,
         pendingCarnetSettlementOrdersCount: pendingCarnetRows.length,

@@ -161,7 +161,22 @@ function CyclistWalletPage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-semibold">{(summary?.myEarningsMad ?? 0).toFixed(2)} MAD</p>
-            <p className="text-xs text-muted-foreground">Delivered today: {summary?.deliveredTodayCount ?? 0}</p>
+            <p className="text-xs text-muted-foreground">All-time delivered earnings · أرباح التوصيل منذ البداية</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <HandCoins className="size-4 text-primary" />
+              Pending Earnings · أرباح قيد التسوية
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{(summary?.pendingEarningsMad ?? 0).toFixed(2)} MAD</p>
+            <p className="text-xs text-muted-foreground">
+              Delivered orders pending settlement: {summary?.pendingSettlementOrdersCount ?? 0}
+            </p>
           </CardContent>
         </Card>
 
@@ -196,7 +211,7 @@ function CyclistWalletPage() {
               className="w-full"
               onClick={() => {
                 if ((summary?.pendingSettlementOrdersCount ?? 0) <= 0) {
-                  toast.info("No pending cash to hand over. · ما كايناش فلوس معلقة دابا");
+                  toast.info("No pending settlement. · ما كاين حتى تسوية معلقة دابا");
                   return;
                 }
                 setIsQrOpen(true);
