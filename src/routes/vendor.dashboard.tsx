@@ -46,6 +46,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { getVendorInventoryData, updateVendorFlashSale, upsertVendorInventoryItem } from "@/lib/catalog.functions";
 import {
   getCarnetCustomerLedger,
@@ -889,7 +890,7 @@ function VendorDashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-muted/30">
+    <main className="min-h-screen bg-muted/20">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
           <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
@@ -899,7 +900,7 @@ function VendorDashboardPage() {
                   <Store className="size-5" />
                 </span>
                 <div>
-                  <h1 className="text-base font-semibold text-foreground sm:text-lg">{vendorStoreName}</h1>
+                  <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">{vendorStoreName}</h1>
                   <p className="text-xs text-muted-foreground sm:text-sm">Vendor Operations Dashboard</p>
                 </div>
               </div>
@@ -2634,9 +2635,7 @@ function QuickStatCard({
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-      {label}
-    </div>
+    <AppEmptyState title={label} subtitle="Data will appear here as soon as it becomes available." />
   );
 }
 

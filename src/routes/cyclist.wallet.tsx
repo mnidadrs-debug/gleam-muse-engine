@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
 import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclists.functions";
 
@@ -93,7 +94,7 @@ function CyclistWalletPage() {
 
   if (!session?.cyclistId) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <main className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
         <Card className="w-full max-w-sm">
           <CardContent className="space-y-3 p-5 text-center">
             <p className="text-sm text-muted-foreground">Session expired, please login again.</p>
@@ -139,14 +140,14 @@ function CyclistWalletPage() {
   });
 
   return (
-    <main className="min-h-screen bg-muted/30 px-4 py-4">
+    <main className="min-h-screen bg-muted/20 px-4 py-4">
       <div className="mx-auto w-full max-w-xl space-y-4">
         <header className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/cyclist/dashboard" })}>
             <ArrowLeft className="size-4" />
           </Button>
           <div className="text-center">
-            <h1 className="text-sm font-semibold">Cyclist Wallet</h1>
+            <h1 className="text-sm font-bold tracking-tight text-foreground">Cyclist Wallet</h1>
             <p className="text-xs text-muted-foreground">محفظة السائق</p>
           </div>
           <span className="w-9" />
@@ -252,9 +253,11 @@ function CyclistWalletPage() {
               <p className="text-xs text-muted-foreground">Completed Deliveries · الطلبات المكتملة</p>
               <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                 {(earningsHistory?.deliveries?.length ?? 0) === 0 ? (
-                  <p className="py-3 text-center text-xs text-muted-foreground">
-                    No deliveries for this period. · لا توجد عمليات توصيل في هذه الفترة.
-                  </p>
+                  <AppEmptyState
+                    title="No deliveries for this period. · لا توجد عمليات توصيل في هذه الفترة."
+                    subtitle="Completed delivery records will appear here automatically."
+                    className="py-5"
+                  />
                 ) : (
                   earningsHistory!.deliveries.map((delivery) => (
                     <div key={delivery.orderId} className="rounded-md border border-border bg-background px-3 py-2">

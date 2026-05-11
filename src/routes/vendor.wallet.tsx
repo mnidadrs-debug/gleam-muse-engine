@@ -169,14 +169,14 @@ function VendorWalletPage() {
   }, [confirmPayload]);
 
   return (
-    <main className="min-h-screen bg-muted/30 px-4 py-4">
+    <main className="min-h-screen bg-muted/20 px-4 py-4">
       <div className="mx-auto w-full max-w-xl space-y-4">
         <header className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/vendor/dashboard" })}>
             <ArrowLeft className="size-4" />
           </Button>
           <div className="text-center">
-            <h1 className="text-sm font-semibold">Cash Reconciliation</h1>
+            <h1 className="text-sm font-bold tracking-tight text-foreground">Cash Reconciliation</h1>
             <p className="text-xs text-muted-foreground">تسوية واستلام النقود</p>
           </div>
           <span className="w-9" />

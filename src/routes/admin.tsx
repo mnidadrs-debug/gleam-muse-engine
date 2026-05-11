@@ -40,6 +40,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1538,13 +1539,13 @@ function AdminPage() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-muted/30">
+      <div className="flex min-h-screen w-full bg-muted/20">
         <AdminSidebar activeTab={tab} />
         <SidebarInset className="bg-transparent">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="h-9 w-9 rounded-md border border-border" />
             <div>
-              <h1 className="text-base font-semibold text-foreground">Super-Admin Dashboard</h1>
+              <h1 className="text-base font-bold tracking-tight text-foreground">Super-Admin Dashboard</h1>
               <p className="text-xs text-muted-foreground">Marketplace operations and control center</p>
             </div>
           </header>
@@ -2557,13 +2558,17 @@ function VendorsSection({
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  Loading vendors...
+                  <AppEmptyState title="Loading vendors..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : vendors.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No vendors yet. Add your first vendor to begin onboarding.
+                  <AppEmptyState
+                    title="No vendors yet."
+                    subtitle="Add your first vendor to begin onboarding."
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : (
@@ -2651,13 +2656,17 @@ function CyclistsSection({
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  Loading cyclists...
+                  <AppEmptyState title="Loading cyclists..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : cyclists.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No cyclists yet. Add your first cyclist to dispatch deliveries.
+                  <AppEmptyState
+                    title="No cyclists yet."
+                    subtitle="Add your first cyclist to dispatch deliveries."
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : (
@@ -2806,9 +2815,13 @@ function ServiceZonesSection({
           Configured Zones
         </div>
         {isLoading ? (
-          <p className="p-4 text-sm text-muted-foreground">Loading service zones...</p>
+          <div className="p-4">
+            <AppEmptyState title="Loading service zones..." subtitle="Fetching configured communes and neighborhoods." />
+          </div>
         ) : zones.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">No service zones yet.</p>
+          <div className="p-4">
+            <AppEmptyState title="No service zones yet." subtitle="Create your first commune and neighborhood to start dispatching." />
+          </div>
         ) : (
           <div className="space-y-3 p-4">
             {zones.map((zone) => (
@@ -2885,13 +2898,13 @@ function CatalogSection({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
-          <article className="col-span-full rounded-md border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-            Loading products...
-          </article>
+          <AppEmptyState title="Loading products..." subtitle="Syncing the master product catalog." className="col-span-full" />
         ) : products.length === 0 ? (
-          <article className="col-span-full rounded-md border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-            No master products yet. Add your first shared product.
-          </article>
+          <AppEmptyState
+            title="No master products yet."
+            subtitle="Add your first shared product."
+            className="col-span-full"
+          />
         ) : (
           products.map((product) => {
             const categoryName = categories.find((category) => category.id === product.categoryId)?.name_en ?? product.category;
@@ -3147,9 +3160,9 @@ function CategoriesSection({
         <div className="space-y-3 rounded-md border border-border bg-background p-3">
           <h3 className="text-sm font-semibold text-foreground">Saved Categories</h3>
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading categories...</p>
+            <AppEmptyState title="Loading categories..." subtitle="Please wait while categories are fetched." className="py-5" />
           ) : categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No categories yet.</p>
+            <AppEmptyState title="No categories yet." subtitle="Create your first category to organize products." className="py-5" />
           ) : (
             <div className="space-y-2">
               {categories.map((category) => (
@@ -3372,9 +3385,9 @@ function AdsContentSection({
 
           <div className="max-h-64 space-y-2 overflow-auto rounded-md border border-border p-2">
             {isLoading ? (
-              <p className="text-xs text-muted-foreground">Loading ads...</p>
+              <AppEmptyState title="Loading ads..." subtitle="Fetching homepage campaigns." className="py-5" />
             ) : ads.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No ads configured yet.</p>
+              <AppEmptyState title="No ads configured yet." subtitle="Create your first campaign banner." className="py-5" />
             ) : (
               ads.map((ad) => (
                 <article key={ad.id} className="rounded-md border border-border bg-card p-2">
@@ -3493,9 +3506,9 @@ function AdsContentSection({
 
           <div className="max-h-64 space-y-2 overflow-auto rounded-md border border-border p-2">
             {isLoading ? (
-              <p className="text-xs text-muted-foreground">Loading announcements...</p>
+              <AppEmptyState title="Loading announcements..." subtitle="Fetching ticker messages." className="py-5" />
             ) : announcements.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No announcements configured yet.</p>
+              <AppEmptyState title="No announcements configured yet." subtitle="Create your first global announcement." className="py-5" />
             ) : (
               announcements.map((announcement) => (
                 <article key={announcement.id} className="rounded-md border border-border bg-card p-2">
@@ -3626,13 +3639,17 @@ function OrdersSection({
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  Loading orders...
+                  <AppEmptyState title="Loading orders..." subtitle="Fetching order history for selected filters." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  No orders found for the selected filter.
+                  <AppEmptyState
+                    title="No orders found for the selected filter."
+                    subtitle="Try switching period or order status."
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : (
@@ -3708,13 +3725,13 @@ function CustomersSection({
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  Loading customers...
+                  <AppEmptyState title="Loading customers..." subtitle="Syncing CRM customer profiles." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : customers.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  No customers yet.
+                  <AppEmptyState title="No customers yet." subtitle="Customer profiles will appear after first orders." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : (
