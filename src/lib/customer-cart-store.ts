@@ -5,7 +5,7 @@ export type CustomerCartItem = {
   id: string;
   name: string;
   price: number;
-  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image: string;
   alt: string;
   quantity: number;

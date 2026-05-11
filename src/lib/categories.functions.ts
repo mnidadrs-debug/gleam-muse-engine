@@ -3,7 +3,7 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const productCategorySchema = z.enum(["Vegetables", "Fruits", "Dairy", "Bakery", "Pantry"]);
+const productCategorySchema = z.enum(["Groceries", "Vegetables & Fruits", "Meat & Poultry", "Bakery & Pastry", "Dairy & Eggs", "Drinks & Water", "Cleaning Supplies"]);
 
 const optionalNeighborhoodSchema = z.object({
   neighborhoodId: z.string().uuid().nullable().optional(),
@@ -48,7 +48,7 @@ type MasterProductRow = {
   name_fr: string | null;
   name_ar: string | null;
   image_url: string | null;
-  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   created_at: string;
 };
 
@@ -102,7 +102,7 @@ export const createCategory = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const parsedCategory = productCategorySchema.safeParse(data.nameEn);
     if (!parsedCategory.success) {
-      throw new Error("Category English name must be one of: Vegetables, Fruits, Dairy, Bakery, Pantry.");
+      throw new Error("Category English name must be one of: Groceries, Vegetables & Fruits, Meat & Poultry, Bakery & Pastry, Dairy & Eggs, Drinks & Water, Cleaning Supplies.");
     }
 
     const { data: inserted, error } = await (supabaseAdmin as any)
@@ -132,7 +132,7 @@ export const updateCategory = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const parsedCategory = productCategorySchema.safeParse(data.nameEn);
     if (!parsedCategory.success) {
-      throw new Error("Category English name must be one of: Vegetables, Fruits, Dairy, Bakery, Pantry.");
+      throw new Error("Category English name must be one of: Groceries, Vegetables & Fruits, Meat & Poultry, Bakery & Pastry, Dairy & Eggs, Drinks & Water, Cleaning Supplies.");
     }
 
     const { data: updated, error } = await (supabaseAdmin as any)
@@ -246,7 +246,7 @@ export const getCategoryProducts = createServerFn({ method: "POST" })
           nameAr: string | null;
           imageUrl: string | null;
           price: number;
-          measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+          measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
           createdAt: string;
         }>,
       };
@@ -285,7 +285,7 @@ export const getCategoryProducts = createServerFn({ method: "POST" })
       nameAr: string | null;
       imageUrl: string | null;
       price: number;
-      measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+      measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
       createdAt: string;
     }>();
 
@@ -298,7 +298,7 @@ export const getCategoryProducts = createServerFn({ method: "POST" })
         name_fr: string | null;
         name_ar: string | null;
         image_url: string | null;
-        measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+        measurement_unit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         created_at: string;
       } | null;
     }>) {
@@ -388,7 +388,7 @@ export const listCategoryMasterProducts = createServerFn({ method: "POST" })
         name_fr: string | null;
         name_ar: string | null;
         image_url: string | null;
-        measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+        measurement_unit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         created_at: string;
         price: number;
       }
@@ -403,7 +403,7 @@ export const listCategoryMasterProducts = createServerFn({ method: "POST" })
         name_fr: string | null;
         name_ar: string | null;
         image_url: string | null;
-        measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+        measurement_unit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         created_at: string;
       } | null;
     }>) {

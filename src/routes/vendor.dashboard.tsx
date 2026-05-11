@@ -119,8 +119,8 @@ type DashboardOrder = {
 type InventoryItem = {
   id: string;
   name: string;
-  category?: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+  category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   imageUrl?: string | null;
   vendorPrice: number;
   isAvailable: boolean;
@@ -656,8 +656,8 @@ function VendorDashboardPage() {
       ((inventoryQuery.data?.products ?? []) as Array<{
         id: string;
         name: string;
-        category?: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-        measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+        category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+        measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         imageUrl?: string | null;
         vendorPrice: number;
         isAvailable: boolean;

@@ -108,7 +108,7 @@ type Product = {
   category: ProductCategory;
   categoryId?: string | null;
   price: number;
-  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image: string;
   alt: string;
 };
@@ -562,7 +562,7 @@ function Index() {
       name: string;
       nameFr?: string | null;
       nameAr?: string | null;
-      measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+      measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
       imageUrl?: string | null;
       vendorPrice: number;
       flashSalePrice: number;
@@ -581,7 +581,7 @@ function Index() {
         name: localizedName,
         nameFr: row.nameFr,
         nameAr: row.nameAr,
-        category: "Pantry" as ProductCategory,
+        category: "Groceries" as ProductCategory,
         categoryId: null,
         price: Number(row.vendorPrice),
         dealPrice: Number(row.flashSalePrice),
@@ -844,7 +844,7 @@ function Index() {
   const addFlashDealToCart = (deal: {
     id: string;
     name: string;
-    measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+    measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
     image: string;
     alt: string;
     dealPrice: number;

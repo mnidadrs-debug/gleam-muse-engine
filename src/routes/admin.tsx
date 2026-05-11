@@ -208,13 +208,13 @@ const initialAdminOrders: Array<{
   totalPrice: number;
   status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
 }> = [];
-const measurementUnits: MeasurementUnit[] = ["Kg", "Liter", "Piece", "Pack"];
+const measurementUnits: MeasurementUnit[] = ["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"];
 const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
   nameAr: z.string().trim().min(1),
   categoryId: z.string().uuid(),
-  measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack"]),
+  measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]),
   popularityScore: z.number().int().min(0).max(1_000_000),
 });
 
