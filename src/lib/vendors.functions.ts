@@ -13,6 +13,8 @@ export interface AdminVendorRecord {
   storeName: string;
   ownerName: string;
   phoneNumber: string;
+  vendorType: "general" | "specialized";
+  assignedCategories: string[];
   neighborhoodIds: string[];
   zone: string;
   status: "Active" | "Offline";
@@ -24,6 +26,8 @@ interface VendorRow {
   store_name: string;
   owner_name: string;
   phone_number: string;
+  vendor_type: "general" | "specialized";
+  assigned_categories: string[];
   is_active: boolean;
   created_at: string | null;
 }
@@ -44,6 +48,8 @@ const createVendorInputSchema = z.object({
   storeName: z.string().trim().min(1).max(120),
   ownerName: z.string().trim().min(1).max(120),
   phoneNumber: z.string().trim().min(1).max(20),
+  vendorType: z.enum(["general", "specialized"]).default("general"),
+  assignedCategories: z.array(z.string()).default([]),
   neighborhoodIds: z.array(z.string().uuid()).min(1),
   isActive: z.boolean(),
 });
@@ -53,6 +59,8 @@ const updateVendorDetailsInputSchema = z.object({
   storeName: z.string().trim().min(1).max(120),
   ownerName: z.string().trim().min(1).max(120),
   phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  vendorType: z.enum(["general", "specialized"]).default("general"),
+  assignedCategories: z.array(z.string()).default([]),
   neighborhoodIds: z.array(z.string().uuid()).min(1),
 });
 
