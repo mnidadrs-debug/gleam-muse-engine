@@ -656,15 +656,12 @@ function Index() {
   useEffect(() => {
     const profile = customerProfileQuery.data;
     if (!customerSession?.phoneNumber) {
-      setHasHydratedCheckoutProfile(false);
       return;
     }
 
     if (customerProfileQuery.isLoading) {
       return;
     }
-
-    setHasHydratedCheckoutProfile(true);
 
     const persistedLocation = readPersistedLocation();
     if (persistedLocation) {
@@ -1048,8 +1045,7 @@ function Index() {
     void navigate({ to: "/", replace: true });
   }, [cartItems.length, location.hash, navigate, openCheckout]);
 
-  const isCheckoutProfileHydrating =
-    !!customerSession?.phoneNumber && (!hasHydratedCheckoutProfile || customerProfileQuery.isLoading);
+  const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;
 
   const canConfirmOrder =
     !isSubmittingOrder &&
