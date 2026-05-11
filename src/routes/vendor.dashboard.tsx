@@ -1397,6 +1397,7 @@ function VendorDashboardPage() {
                               quantity: Number(item.quantity ?? 0),
                             })) as LedgerOrderItem[])
                           : [];
+                        const orderDeliveryFeeMad = orderId ? Number(ordersById.get(orderId)?.deliveryFeeMad ?? 0) : 0;
 
                         return (
                           <Fragment key={transaction.id}>
@@ -1454,6 +1455,9 @@ function VendorDashboardPage() {
                                               {item.quantity} x {item.name}
                                             </p>
                                           ))}
+                                          <div className="mt-2 border-t border-gray-200 pt-2 text-gray-500 text-sm">
+                                            Delivery Fee (Paid to Cyclist) / رسوم التوصيل: {orderDeliveryFeeMad.toFixed(2)} MAD
+                                          </div>
                                         </div>
                                       ) : (
                                         <p>No item details available for this order.</p>
