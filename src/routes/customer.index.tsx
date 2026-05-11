@@ -270,7 +270,6 @@ function Index() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
-  const [hasHydratedCheckoutProfile, setHasHydratedCheckoutProfile] = useState(false);
   const [selectedCommuneId, setSelectedCommuneId] = useState("");
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -901,7 +900,7 @@ function Index() {
     closeCart();
     setCheckoutStep("details");
     setSelectedPaymentMethod("COD");
-    setHasHydratedCheckoutProfile(false);
+    void customerProfileQuery.refetch();
     setIsCheckoutOpen(true);
   };
 
