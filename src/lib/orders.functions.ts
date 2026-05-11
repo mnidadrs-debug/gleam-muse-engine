@@ -54,6 +54,7 @@ const settleCyclistCashHandoverInputSchema = z.object({
 type VendorRow = {
   id: string;
   store_name: string;
+  phone_number?: string;
 };
 
 type OrderRow = {
@@ -81,6 +82,68 @@ export type VendorSettlementSummary = {
   lifetimeEarningsMad: number;
   pendingCyclistCount: number;
 };
+
+async function resolveVendorByPhone(phoneNumber: string) {
+  const { data: vendor, error } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id, store_name, phone_number")
+    .eq("phone_number", phoneNumber)
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !vendor?.id) {
+    throw new Error("Vendor session is invalid.");
+  }
+
+  return vendor as VendorRow;
+}
+
+async function resolveVendorsForNeighborhood(neighborhoodId: string) {
+  const { data: zoneRows, error: zonesError } = await (supabaseAdmin as any)
+    .from("vendor_service_zones")
+    .select("vendor_id")
+    .eq("neighborhood_id", neighborhoodId);
+
+  if (zonesError) {
+    throw new Error(zonesError.message);
+  }
+
+  let vendorIds = ((zoneRows ?? []) as Array<{ vendor_id: string | null }>)
+    .map((row) => row.vendor_id)
+    .filter((value): value is string => Boolean(value));
+
+  if (vendorIds.length === 0) {
+    const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
+      .from("neighborhoods")
+      .select("vendor_id")
+      .eq("id", neighborhoodId)
+      .maybeSingle();
+
+    if (neighborhoodError) {
+      throw new Error(neighborhoodError.message);
+    }
+
+    const fallbackVendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
+    vendorIds = fallbackVendorId ? [fallbackVendorId] : [];
+  }
+
+  if (vendorIds.length === 0) {
+    return [] as Array<{ id: string }>;
+  }
+
+  const { data: vendors, error: vendorsError } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id")
+    .in("id", vendorIds)
+    .eq("is_active", true);
+
+  if (vendorsError) {
+    throw new Error(vendorsError.message);
+  }
+
+  return (vendors ?? []) as Array<{ id: string }>;
+}
 
 export const createCustomerOrder = createServerFn({ method: "POST" })
   .inputValidator((input) => createCustomerOrderInputSchema.parse(input))
