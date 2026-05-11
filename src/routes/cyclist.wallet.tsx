@@ -93,7 +93,7 @@ function CyclistWalletPage() {
 
   if (!session?.cyclistId) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4">
+      <main className="flex min-h-screen items-center justify-center bg-muted/20 px-4">
         <Card className="w-full max-w-sm">
           <CardContent className="space-y-3 p-5 text-center">
             <p className="text-sm text-muted-foreground">Session expired, please login again.</p>
@@ -139,14 +139,14 @@ function CyclistWalletPage() {
   });
 
   return (
-    <main className="min-h-screen bg-muted/30 px-4 py-4">
+    <main className="min-h-screen bg-muted/20 px-4 py-4">
       <div className="mx-auto w-full max-w-xl space-y-4">
         <header className="flex items-center justify-between rounded-xl border border-border bg-card p-3">
           <Button variant="ghost" size="icon" onClick={() => navigate({ to: "/cyclist/dashboard" })}>
             <ArrowLeft className="size-4" />
           </Button>
           <div className="text-center">
-            <h1 className="text-sm font-semibold">Cyclist Wallet</h1>
+            <h1 className="text-sm font-bold tracking-tight text-foreground">Cyclist Wallet</h1>
             <p className="text-xs text-muted-foreground">محفظة السائق</p>
           </div>
           <span className="w-9" />
