@@ -2558,13 +2558,17 @@ function VendorsSection({
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  Loading vendors...
+                  <AppEmptyState title="Loading vendors..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : vendors.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No vendors yet. Add your first vendor to begin onboarding.
+                  <AppEmptyState
+                    title="No vendors yet."
+                    subtitle="Add your first vendor to begin onboarding."
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : (
@@ -2652,13 +2656,17 @@ function CyclistsSection({
             {isLoading ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  Loading cyclists...
+                  <AppEmptyState title="Loading cyclists..." subtitle="Please wait while we sync records." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : cyclists.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  No cyclists yet. Add your first cyclist to dispatch deliveries.
+                  <AppEmptyState
+                    title="No cyclists yet."
+                    subtitle="Add your first cyclist to dispatch deliveries."
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : (
