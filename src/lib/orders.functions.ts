@@ -374,10 +374,12 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => updateOrderStatusInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
       const { data: order, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
         .select("id, status")
         .eq("id", data.orderId)
+        .eq("vendor_id", vendor.id)
         .single();
 
       if (orderError || !order?.id) {
@@ -413,6 +415,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
   .inputValidator((input) => vendorSettlementSummaryInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
       const [
         { data: pendingRows, error: pendingError },
         { data: receivedRows, error: receivedError },
@@ -421,7 +424,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("cyclist_id, total_price, delivery_fee")
-          .eq("vendor_id", data.vendorId)
+          .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
           .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "pending")
@@ -429,7 +432,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .eq("vendor_id", data.vendorId)
+          .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
           .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled")
@@ -438,7 +441,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .eq("vendor_id", data.vendorId)
+          .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
           .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled"),
@@ -493,10 +496,11 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
   .inputValidator((input) => settleCyclistCashHandoverInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
         .select("id, total_price, delivery_fee, payment_method")
-        .eq("vendor_id", data.vendorId)
+        .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
         .eq("vendor_settlement_status", "pending");
@@ -529,7 +533,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
       const { data: updatedRows, error: updateError } = await (supabaseAdmin as any)
         .from("orders")
         .update({ vendor_settlement_status: "settled" })
-        .eq("vendor_id", data.vendorId)
+        .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
         .eq("vendor_settlement_status", "pending")
