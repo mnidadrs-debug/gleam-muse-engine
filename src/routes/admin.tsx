@@ -208,13 +208,22 @@ const initialAdminOrders: Array<{
   totalPrice: number;
   status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
 }> = [];
-const measurementUnits: MeasurementUnit[] = ["Kg", "Liter", "Piece", "Pack"];
+const measurementUnits: MeasurementUnit[] = ["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"];
+const specializationOptions = [
+  "Groceries",
+  "Vegetables & Fruits",
+  "Meat & Poultry",
+  "Bakery & Pastry",
+  "Dairy & Eggs",
+  "Drinks & Water",
+  "Cleaning Supplies",
+] as const;
 const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
   nameAr: z.string().trim().min(1),
   categoryId: z.string().uuid(),
-  measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack"]),
+  measurementUnit: z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]),
   popularityScore: z.number().int().min(0).max(1_000_000),
 });
 
@@ -419,6 +428,8 @@ function AdminPage() {
     storeName: "",
     ownerName: "",
     phoneNumber: "",
+    vendorType: "general" as "general" | "specialized",
+    assignedCategories: [] as string[],
     communeId: "",
     neighborhoodIds: [] as string[],
     isActive: true,
@@ -473,6 +484,8 @@ function AdminPage() {
     storeName: "",
     ownerName: "",
     phoneNumber: "",
+    vendorType: "general" as "general" | "specialized",
+    assignedCategories: [] as string[],
     communeId: "",
     neighborhoodIds: [] as string[],
     isActive: true,
@@ -642,6 +655,8 @@ function AdminPage() {
       storeName: vendor.storeName,
       ownerName: vendor.ownerName,
       phoneNumber: normalizeMoroccoPhoneInput(vendor.phoneNumber),
+      vendorType: vendor.vendorType ?? "general",
+      assignedCategories: vendor.assignedCategories ?? [],
       communeId: matchingCommune?.id ?? "",
       neighborhoodIds: vendor.neighborhoodIds,
       isActive: vendor.status === "Active",
@@ -696,6 +711,8 @@ function AdminPage() {
           storeName: manageVendorForm.storeName.trim(),
           ownerName: manageVendorForm.ownerName.trim(),
           phoneNumber: formatMoroccoPhoneForPayload(normalizedPhone),
+          vendorType: manageVendorForm.vendorType,
+          assignedCategories: manageVendorForm.assignedCategories,
           neighborhoodIds: manageVendorForm.neighborhoodIds,
         },
       });
@@ -729,6 +746,8 @@ function AdminPage() {
           storeName: vendorForm.storeName.trim(),
           ownerName: vendorForm.ownerName.trim(),
           phoneNumber: formatMoroccoPhoneForPayload(normalizedPhone),
+          vendorType: vendorForm.vendorType,
+          assignedCategories: vendorForm.assignedCategories,
           neighborhoodIds: vendorForm.neighborhoodIds,
           isActive: vendorForm.isActive,
         },
@@ -739,6 +758,8 @@ function AdminPage() {
         storeName: "",
         ownerName: "",
         phoneNumber: "",
+        vendorType: "general",
+        assignedCategories: [],
         communeId: "",
         neighborhoodIds: [],
         isActive: true,

@@ -3,8 +3,20 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const measurementUnitSchema = z.enum(["Kg", "Liter", "Piece", "Pack"]);
-const productCategorySchema = z.enum(["Vegetables", "Fruits", "Dairy", "Bakery", "Pantry"]);
+const measurementUnitSchema = z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]);
+const productCategorySchema = z.enum([
+  "Groceries",
+  "Vegetables & Fruits",
+  "Meat & Poultry",
+  "Bakery & Pastry",
+  "Dairy & Eggs",
+  "Drinks & Water",
+  "Cleaning Supplies",
+]);
+
+const vendorInventoryInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
+});
 
 const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
@@ -82,8 +94,8 @@ type MasterProductRow = {
   name_fr: string | null;
   name_ar: string | null;
   category_id: string | null;
-  category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+  category: ProductCategory;
+  measurement_unit: MeasurementUnit;
   image_url: string | null;
   popularity_score: number;
   is_active: boolean;
@@ -103,8 +115,11 @@ type VendorProductRow = {
 type VendorRow = {
   id: string;
   store_name: string;
-  neighborhood_id: string;
+  vendor_type: "general" | "specialized";
+  assigned_categories: string[];
 };
+
+type VendorType = "general" | "specialized";
 
 export const listMasterProducts = createServerFn({ method: "GET" }).handler(async () => {
   try {
@@ -292,19 +307,27 @@ export const archiveMasterProduct = createServerFn({ method: "POST" })
     }
   });
 
-function getCurrentVendorQuery() {
-  return (supabaseAdmin as any)
+function getCurrentVendorQuery(phoneNumber?: string) {
+  const query = (supabaseAdmin as any)
     .from("vendors")
-    .select("id, store_name")
-    .eq("is_active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+    .select("id, store_name, vendor_type, assigned_categories")
+    .eq("is_active", true);
+
+  if (phoneNumber) {
+    query.eq("phone_number", phoneNumber);
+  }
+
+  return query.order("created_at", { ascending: true }).limit(1).single();
 }
 
-export const getVendorInventoryData = createServerFn({ method: "GET" }).handler(async () => {
+export const getVendorInventoryData = createServerFn({ method: "POST" })
+  .inputValidator((input) => vendorInventoryInputSchema.parse(input))
+  .handler(async ({ data }) => {
   try {
-    const { data: vendor, error: vendorError } = await getCurrentVendorQuery();
+    const { data: vendor, error: vendorError } = await getCurrentVendorQuery(data.phoneNumber);
+    const resolvedVendorType: VendorType = (vendor?.vendor_type as VendorType | undefined) ?? "general";
+    const resolvedAssignedCategories =
+      resolvedVendorType === "specialized" ? ((vendor?.assigned_categories ?? []) as string[]) : [];
 
     if (vendorError || !vendor?.id) {
       return {
@@ -312,8 +335,8 @@ export const getVendorInventoryData = createServerFn({ method: "GET" }).handler(
         products: [] as Array<{
           id: string;
           name: string;
-          category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-          measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+          category: ProductCategory;
+          measurementUnit: MeasurementUnit;
           vendorProductId: string | null;
           vendorPrice: number;
           isAvailable: boolean;
@@ -321,13 +344,34 @@ export const getVendorInventoryData = createServerFn({ method: "GET" }).handler(
       };
     }
 
+    if (resolvedVendorType === "specialized" && resolvedAssignedCategories.length === 0) {
+      return {
+        vendor: vendor as VendorRow,
+        products: [] as Array<{
+          id: string;
+          name: string;
+          category: ProductCategory;
+          measurementUnit: MeasurementUnit;
+          vendorProductId: string | null;
+          vendorPrice: number;
+          isAvailable: boolean;
+        }>,
+      };
+    }
+
+    const masterProductsQuery = (supabaseAdmin as any)
+      .from("master_products")
+      .select("id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, created_at")
+      .eq("is_active", true)
+      .order("created_at", { ascending: false });
+
+    if (resolvedVendorType === "specialized") {
+      masterProductsQuery.in("category", resolvedAssignedCategories);
+    }
+
     const [{ data: masterProducts, error: masterError }, { data: vendorProducts, error: vendorProductsError }] =
       await Promise.all([
-        (supabaseAdmin as any)
-          .from("master_products")
-          .select("id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, created_at")
-          .eq("is_active", true)
-          .order("created_at", { ascending: false }),
+        masterProductsQuery,
         (supabaseAdmin as any)
           .from("vendor_products")
           .select("id, master_product_id, vendor_price, is_available, is_flash_sale, flash_sale_price, flash_sale_end_time")
@@ -475,7 +519,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
           name: string;
           nameFr: string | null;
           nameAr: string | null;
-          measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+          measurementUnit: MeasurementUnit;
           imageUrl: string | null;
           vendorPrice: number;
           flashSalePrice: number;
@@ -563,8 +607,8 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: string;
             nameFr: string | null;
             nameAr: string | null;
-            category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-            measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+            category: ProductCategory;
+            measurementUnit: MeasurementUnit;
             imageUrl: string | null;
             popularityScore: number;
             vendorPrice: number;
@@ -605,8 +649,8 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name_fr: string | null;
             name_ar: string | null;
             category_id: string | null;
-            category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-            measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+            category: ProductCategory;
+            measurement_unit: MeasurementUnit;
             image_url: string | null;
             popularity_score: number;
             is_active: boolean;

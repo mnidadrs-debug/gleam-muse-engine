@@ -21,7 +21,7 @@ type CatalogProduct = {
   name: string;
   nameFr: string | null;
   nameAr: string | null;
-  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   imageUrl: string | null;
   vendorPrice: number;
 };

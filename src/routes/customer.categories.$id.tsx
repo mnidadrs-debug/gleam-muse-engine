@@ -31,7 +31,7 @@ type CategoryProduct = {
   name_fr: string | null;
   name_ar: string | null;
   image_url: string | null;
-  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   price?: number;
 };
 

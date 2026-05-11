@@ -13,6 +13,8 @@ export interface AdminVendorRecord {
   storeName: string;
   ownerName: string;
   phoneNumber: string;
+  vendorType: "general" | "specialized";
+  assignedCategories: string[];
   neighborhoodIds: string[];
   zone: string;
   status: "Active" | "Offline";
@@ -24,6 +26,8 @@ interface VendorRow {
   store_name: string;
   owner_name: string;
   phone_number: string;
+  vendor_type: "general" | "specialized";
+  assigned_categories: string[];
   is_active: boolean;
   created_at: string | null;
 }
@@ -44,6 +48,8 @@ const createVendorInputSchema = z.object({
   storeName: z.string().trim().min(1).max(120),
   ownerName: z.string().trim().min(1).max(120),
   phoneNumber: z.string().trim().min(1).max(20),
+  vendorType: z.enum(["general", "specialized"]).default("general"),
+  assignedCategories: z.array(z.string()).default([]),
   neighborhoodIds: z.array(z.string().uuid()).min(1),
   isActive: z.boolean(),
 });
@@ -53,6 +59,8 @@ const updateVendorDetailsInputSchema = z.object({
   storeName: z.string().trim().min(1).max(120),
   ownerName: z.string().trim().min(1).max(120),
   phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+  vendorType: z.enum(["general", "specialized"]).default("general"),
+  assignedCategories: z.array(z.string()).default([]),
   neighborhoodIds: z.array(z.string().uuid()).min(1),
 });
 
@@ -147,7 +155,7 @@ async function fetchVendorRecord(vendorId: string) {
     await Promise.all([
       (supabaseAdmin as any)
         .from("vendors")
-        .select("id, store_name, owner_name, phone_number, is_active, created_at")
+        .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
         .eq("id", vendorId)
         .single(),
       (supabaseAdmin as any)
@@ -179,6 +187,8 @@ async function fetchVendorRecord(vendorId: string) {
     storeName: row.store_name,
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
+    vendorType: row.vendor_type ?? "general",
+    assignedCategories: row.vendor_type === "specialized" ? (row.assigned_categories ?? []) : [],
     neighborhoodIds: vendorNeighborhoods.map((n) => n.id),
     zone: zoneFromNeighborhoods(vendorNeighborhoods, communeMap),
     status: row.is_active ? "Active" : "Offline",
@@ -191,7 +201,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
     await Promise.all([
       (supabaseAdmin as any)
         .from("vendors")
-        .select("id, store_name, owner_name, phone_number, is_active, created_at")
+        .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
         .order("created_at", { ascending: false }),
       (supabaseAdmin as any).from("neighborhoods").select("id, name, commune_id, vendor_id"),
       (supabaseAdmin as any).from("communes").select("id, name"),
@@ -225,6 +235,8 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       storeName: vendor.store_name,
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
+      vendorType: vendor.vendor_type ?? "general",
+      assignedCategories: vendor.vendor_type === "specialized" ? (vendor.assigned_categories ?? []) : [],
       neighborhoodIds: vendorNeighborhoods.map((neighborhood) => neighborhood.id),
       zone: zoneFromNeighborhoods(vendorNeighborhoods, communeMap),
       status: vendor.is_active ? "Active" : "Offline",
@@ -244,6 +256,11 @@ export const createVendor = createServerFn({ method: "POST" })
       }
 
       const payloadPhoneNumber = formatMoroccoPhoneForPayload(normalizedPhone);
+      const normalizedVendorType = data.vendorType ?? "general";
+      const normalizedAssignedCategories =
+        normalizedVendorType === "specialized"
+          ? Array.from(new Set((data.assignedCategories ?? []).map((value) => value.trim()).filter(Boolean)))
+          : [];
       await assertNeighborhoodsAvailable(data.neighborhoodIds);
 
       const { data: inserted, error } = await (supabaseAdmin as any)
@@ -252,6 +269,8 @@ export const createVendor = createServerFn({ method: "POST" })
           store_name: data.storeName,
           owner_name: data.ownerName,
           phone_number: payloadPhoneNumber,
+          vendor_type: normalizedVendorType,
+          assigned_categories: normalizedAssignedCategories,
           is_active: data.isActive,
         })
         .select("id")
@@ -280,6 +299,11 @@ export const updateVendorDetails = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       await assertNeighborhoodsAvailable(data.neighborhoodIds, data.vendorId);
+      const normalizedVendorType = data.vendorType ?? "general";
+      const normalizedAssignedCategories =
+        normalizedVendorType === "specialized"
+          ? Array.from(new Set((data.assignedCategories ?? []).map((value) => value.trim()).filter(Boolean)))
+          : [];
 
       const { data: updated, error } = await (supabaseAdmin as any)
         .from("vendors")
@@ -287,6 +311,8 @@ export const updateVendorDetails = createServerFn({ method: "POST" })
           store_name: data.storeName,
           owner_name: data.ownerName,
           phone_number: data.phoneNumber,
+          vendor_type: normalizedVendorType,
+          assigned_categories: normalizedAssignedCategories,
         })
         .eq("id", data.vendorId)
         .select("id")

@@ -119,8 +119,8 @@ type DashboardOrder = {
 type InventoryItem = {
   id: string;
   name: string;
-  category?: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+  category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+  measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   imageUrl?: string | null;
   vendorPrice: number;
   isAvailable: boolean;
@@ -259,7 +259,11 @@ function VendorDashboardPage() {
 
   const inventoryQuery = useQuery({
     queryKey: ["vendor", "inventory"],
-    queryFn: () => fetchInventoryData(),
+    queryFn: () => {
+      const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("bzaf.vendorSession") : null;
+      const phoneNumber = rawSession ? (JSON.parse(rawSession) as { phoneNumber?: string }).phoneNumber : undefined;
+      return fetchInventoryData({ data: { phoneNumber } });
+    },
     placeholderData: (previousData) => previousData,
   });
 
@@ -656,8 +660,8 @@ function VendorDashboardPage() {
       ((inventoryQuery.data?.products ?? []) as Array<{
         id: string;
         name: string;
-        category?: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-        measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+        category?: "Groceries" | "Vegetables & Fruits" | "Meat & Poultry" | "Bakery & Pastry" | "Dairy & Eggs" | "Drinks & Water" | "Cleaning Supplies";
+        measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
         imageUrl?: string | null;
         vendorPrice: number;
         isAvailable: boolean;
