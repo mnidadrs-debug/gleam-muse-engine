@@ -490,25 +490,79 @@ export const upsertCustomerProfile = createServerFn({ method: "POST" })
   .inputValidator((input) => upsertCustomerProfileInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: updatedRows, error } = await (supabaseAdmin as any)
+      const { data: profileRow, error: profileLookupError } = await (supabaseAdmin as any)
         .from("profiles")
-        .update({
+        .select("id")
+        .eq("phone", data.phoneNumber)
+        .maybeSingle();
+
+      if (profileLookupError) {
+        throw new Error(profileLookupError.message);
+      }
+
+      let profileId = (profileRow as { id?: string } | null)?.id ?? null;
+
+      if (!profileId) {
+        const phoneSlug = data.phoneNumber.replace(/\D/g, "");
+        const syntheticEmail = `customer-${phoneSlug}@checkout.local`;
+        const syntheticPassword = `${crypto.randomUUID()}A!1`;
+
+        const { data: createdUserData, error: createUserError } = await (supabaseAdmin as any).auth.admin.createUser({
+          email: syntheticEmail,
+          password: syntheticPassword,
+          email_confirm: true,
+          user_metadata: {
+            name: data.fullName,
+            phone: data.phoneNumber,
+          },
+        });
+
+        if (createUserError) {
+          const { data: listedUsers, error: listUsersError } = await (supabaseAdmin as any).auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+
+          if (listUsersError) {
+            throw new Error(createUserError.message);
+          }
+
+          const existingUser = (listedUsers?.users ?? []).find(
+            (user: { email?: string | null; id: string }) =>
+              typeof user.email === "string" && user.email.toLowerCase() === syntheticEmail.toLowerCase(),
+          );
+
+          if (!existingUser?.id) {
+            throw new Error(createUserError.message);
+          }
+
+          profileId = existingUser.id;
+        } else {
+          profileId = createdUserData?.user?.id ?? null;
+        }
+
+        if (!profileId) {
+          throw new Error("Customer profile not found.");
+        }
+      }
+
+      const { error: profileUpsertError } = await (supabaseAdmin as any).from("profiles").upsert(
+        {
+          id: profileId,
           phone: data.phoneNumber,
           full_name: data.fullName,
           address: data.address,
           neighborhood_id: data.neighborhoodId,
-        })
-        .eq("phone", data.phoneNumber)
-        .select("id");
+          display_name: data.fullName,
+        },
+        {
+          onConflict: "id",
+          ignoreDuplicates: false,
+        },
+      );
 
-      if (error) {
-        throw new Error(error.message);
-      }
-
-      const profileId = Array.isArray(updatedRows) && updatedRows[0]?.id ? String(updatedRows[0].id) : null;
-
-      if (!profileId) {
-        return { ok: true, updatedCount: 0 };
+      if (profileUpsertError) {
+        throw new Error(profileUpsertError.message);
       }
 
       const { error: legacyError } = await (supabaseAdmin as any).from("customers").upsert(
@@ -529,7 +583,7 @@ export const upsertCustomerProfile = createServerFn({ method: "POST" })
         console.error("Legacy customer profile sync failed:", legacyError.message);
       }
 
-      return { ok: true, updatedCount: Array.isArray(updatedRows) ? updatedRows.length : 0 };
+      return { ok: true, updatedCount: 1 };
     } catch (error) {
       console.error("upsertCustomerProfile failed:", error);
       throw new Error("Failed to save customer profile.");

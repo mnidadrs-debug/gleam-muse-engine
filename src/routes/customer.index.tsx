@@ -61,6 +61,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import Autoplay from "embla-carousel-autoplay";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -654,7 +655,11 @@ function Index() {
 
   useEffect(() => {
     const profile = customerProfileQuery.data;
-    if (customerSession?.phoneNumber && customerProfileQuery.isLoading) {
+    if (!customerSession?.phoneNumber) {
+      return;
+    }
+
+    if (customerProfileQuery.isLoading) {
       return;
     }
 
@@ -683,11 +688,9 @@ function Index() {
     }
 
     if (profile) {
-      setFullName((current) => (current.trim().length > 0 ? current : (profile.fullName ?? "")));
-      setAddress((current) => (current.trim().length > 0 ? current : (profile.address ?? "")));
-      setDeliveryNotes((current) =>
-        current.trim().length > 0 ? current : (profile.savedInstructions ?? ""),
-      );
+      setFullName(profile.fullName ?? "");
+      setAddress(profile.address ?? "");
+      setDeliveryNotes(profile.savedInstructions ?? "");
 
       if (profile.neighborhoodId) {
         const profileLocation = resolveLocationByNeighborhoodId(profile.neighborhoodId);
@@ -894,6 +897,7 @@ function Index() {
     closeCart();
     setCheckoutStep("details");
     setSelectedPaymentMethod("COD");
+    void customerProfileQuery.refetch();
     setIsCheckoutOpen(true);
   };
 
@@ -1041,9 +1045,11 @@ function Index() {
     void navigate({ to: "/", replace: true });
   }, [cartItems.length, location.hash, navigate, openCheckout]);
 
+  const isCheckoutProfileHydrating = !!customerSession?.phoneNumber && customerProfileQuery.isLoading;
+
   const canConfirmOrder =
     !isSubmittingOrder &&
-    !customerProfileQuery.isLoading &&
+    !isCheckoutProfileHydrating &&
     cartItems.length > 0 &&
     fullName.trim().length > 0 &&
     address.trim().length > 0 &&
@@ -1622,12 +1628,12 @@ function Index() {
 
                   <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
                     <h3 className="text-sm font-semibold text-foreground">Delivery Details</h3>
-                    {customerSession?.phoneNumber && customerProfileQuery.isLoading ? (
+                    {isCheckoutProfileHydrating ? (
                       <div className="space-y-2">
-                        <div className="h-10 animate-pulse rounded-xl bg-muted/50" />
-                        <div className="h-10 animate-pulse rounded-xl bg-muted/50" />
-                        <div className="h-10 animate-pulse rounded-xl bg-muted/50" />
-                        <div className="h-24 animate-pulse rounded-xl bg-muted/50" />
+                        <Skeleton className="h-10 rounded-xl" />
+                        <Skeleton className="h-10 rounded-xl" />
+                        <Skeleton className="h-10 rounded-xl" />
+                        <Skeleton className="h-24 rounded-xl" />
                       </div>
                     ) : (
                       <>
