@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { supabase } from "@/integrations/supabase/client";
 import { getCyclistEarningsHistory, getCyclistWalletSummary } from "@/lib/cyclists.functions";
 
@@ -252,9 +253,11 @@ function CyclistWalletPage() {
               <p className="text-xs text-muted-foreground">Completed Deliveries · الطلبات المكتملة</p>
               <div className="max-h-64 space-y-2 overflow-y-auto pr-1">
                 {(earningsHistory?.deliveries?.length ?? 0) === 0 ? (
-                  <p className="py-3 text-center text-xs text-muted-foreground">
-                    No deliveries for this period. · لا توجد عمليات توصيل في هذه الفترة.
-                  </p>
+                  <AppEmptyState
+                    title="No deliveries for this period. · لا توجد عمليات توصيل في هذه الفترة."
+                    subtitle="Completed delivery records will appear here automatically."
+                    className="py-5"
+                  />
                 ) : (
                   earningsHistory!.deliveries.map((delivery) => (
                     <div key={delivery.orderId} className="rounded-md border border-border bg-background px-3 py-2">
