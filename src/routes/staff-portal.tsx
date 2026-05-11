@@ -58,7 +58,7 @@ function StaffPortalPage() {
           {roleCards.map(({ title, subtitle, href, Icon }) => (
             <Card
               key={title}
-              className="border border-gray-100 bg-white p-6 text-center shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
+              className="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm transition-transform duration-200 hover:-translate-y-0.5"
             >
               <CardContent className="space-y-4 p-0">
                 <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
