@@ -22,6 +22,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
 import { getCustomerCarnetBalance, getCustomerCarnetOverview } from "@/lib/carnet.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
@@ -524,9 +525,11 @@ export function CustomerLayout({
                 ))}
               </div>
             ) : ledgerSections.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
-                No carnet transactions yet.
-              </div>
+              <AppEmptyState
+                title="No carnet transactions yet."
+                subtitle="Your ledger activity will appear here once you place carnet orders or make payments."
+                className="px-4 py-6"
+              />
             ) : (
               <div className="space-y-4">
                 {ledgerSections.map((section) => (
