@@ -475,7 +475,7 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
       const { data: rpcResult, error } = await (supabaseAdmin as any).rpc("record_vendor_carnet_payment", {
         p_vendor_id: vendor.id,
         p_customer_phone: data.customerPhone,
-        p_amount_paid: data.amountPaid,
+        p_amount: data.amountPaid,
       });
 
       if (error) {
@@ -487,7 +487,7 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
       return {
         ok: true as const,
         paymentId: (row?.payment_id as string | undefined) ?? null,
-        newCurrentDebt: Number(row?.new_current_debt ?? 0),
+        newCurrentDebt: Number(row?.remaining_debt ?? 0),
       };
     } catch (error) {
       console.error("recordVendorCarnetPayment failed:", error);
