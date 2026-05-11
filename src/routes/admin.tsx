@@ -3506,9 +3506,9 @@ function AdsContentSection({
 
           <div className="max-h-64 space-y-2 overflow-auto rounded-md border border-border p-2">
             {isLoading ? (
-              <p className="text-xs text-muted-foreground">Loading announcements...</p>
+              <AppEmptyState title="Loading announcements..." subtitle="Fetching ticker messages." className="py-5" />
             ) : announcements.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No announcements configured yet.</p>
+              <AppEmptyState title="No announcements configured yet." subtitle="Create your first global announcement." className="py-5" />
             ) : (
               announcements.map((announcement) => (
                 <article key={announcement.id} className="rounded-md border border-border bg-card p-2">
@@ -3639,13 +3639,17 @@ function OrdersSection({
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  Loading orders...
+                  <AppEmptyState title="Loading orders..." subtitle="Fetching order history for selected filters." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : orders.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  No orders found for the selected filter.
+                  <AppEmptyState
+                    title="No orders found for the selected filter."
+                    subtitle="Try switching period or order status."
+                    className="border-0 bg-transparent py-2"
+                  />
                 </td>
               </tr>
             ) : (
@@ -3721,13 +3725,13 @@ function CustomersSection({
             {isLoading ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  Loading customers...
+                  <AppEmptyState title="Loading customers..." subtitle="Syncing CRM customer profiles." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : customers.length === 0 ? (
               <tr>
                 <td colSpan={6} className="px-4 py-12 text-center text-sm text-muted-foreground">
-                  No customers yet.
+                  <AppEmptyState title="No customers yet." subtitle="Customer profiles will appear after first orders." className="border-0 bg-transparent py-2" />
                 </td>
               </tr>
             ) : (
