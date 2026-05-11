@@ -67,7 +67,9 @@ export function evaluateOperationalAccess(pathname: string): AccessResult {
 
   const roleSession = getCurrentRoleSession();
 
-  if (pathname.startsWith("/admin")) {
+  const isAdminOperationalPath = pathname === "/admin" || pathname.startsWith("/admin/");
+
+  if (isAdminOperationalPath) {
     if (!roleSession) return { allowed: false, redirectTo: "/staff-portal" };
     if (roleSession.role !== "admin") return { allowed: false, redirectTo: roleHome(roleSession.role) };
     if (roleSession.phoneNumber !== ADMIN_PHONE) {
