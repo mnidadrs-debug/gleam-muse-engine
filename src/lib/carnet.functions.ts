@@ -499,20 +499,27 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
   .inputValidator((input) => getCustomerCarnetOverviewInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: carnetRow, error: carnetError } = await (supabaseAdmin as any)
+      const { data: carnetRows, error: carnetError } = await (supabaseAdmin as any)
         .from("vendor_carnet")
         .select("vendor_id, customer_phone, current_debt, max_limit, status")
         .eq("customer_phone", data.customerPhone)
         .eq("status", "active")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .order("updated_at", { ascending: false });
 
       if (carnetError) {
         throw new Error(carnetError.message);
       }
 
-      if (!carnetRow?.vendor_id) {
+      const activeRows = (carnetRows ?? []) as Array<{
+        vendor_id?: string | null;
+        customer_phone?: string | null;
+        current_debt?: number | null;
+        max_limit?: number | null;
+      }>;
+
+      const vendorIds = Array.from(new Set(activeRows.map((row) => row.vendor_id).filter(Boolean) as string[]));
+
+      if (vendorIds.length === 0) {
         return { carnet: null, transactions: [] as Array<any> };
       }
 
@@ -521,7 +528,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
           (supabaseAdmin as any)
             .from("orders")
             .select("id, total_price, delivery_fee, created_at")
-            .eq("vendor_id", carnetRow.vendor_id)
+            .in("vendor_id", vendorIds)
             .eq("customer_phone", data.customerPhone)
             .eq("status", "delivered")
             .eq("payment_method", "Carnet")
@@ -529,7 +536,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
           (supabaseAdmin as any)
             .from("carnet_payments")
             .select("id, amount_paid, created_at")
-            .eq("vendor_id", carnetRow.vendor_id)
+            .in("vendor_id", vendorIds)
             .eq("customer_phone", data.customerPhone)
             .order("created_at", { ascending: false }),
         ]);
@@ -564,11 +571,21 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         return bTime - aTime;
       });
 
+      const totalCurrentDebtMad = activeRows.reduce(
+        (sum, row) => sum + Number(row.current_debt ?? 0),
+        0,
+      );
+
+      const totalMaxLimitMad = activeRows.reduce(
+        (sum, row) => sum + Number(row.max_limit ?? 0),
+        0,
+      );
+
       return {
         carnet: {
-          customerPhone: carnetRow.customer_phone as string,
-          currentDebt: Number(carnetRow.current_debt ?? 0),
-          maxLimit: Number(carnetRow.max_limit ?? 0),
+          customerPhone: data.customerPhone,
+          currentDebt: totalCurrentDebtMad,
+          maxLimit: totalMaxLimitMad,
         },
         transactions,
       };
