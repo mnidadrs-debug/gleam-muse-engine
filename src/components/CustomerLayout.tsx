@@ -16,12 +16,14 @@ import {
   User,
   Gift,
   BookOpen,
+  ShoppingBag,
+  BadgeCheck,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getGlobalSettings } from "@/lib/admin-dashboard.functions";
-import { getCustomerCarnetBalance } from "@/lib/carnet.functions";
+import { getCustomerCarnetBalance, getCustomerCarnetOverview } from "@/lib/carnet.functions";
 import { useCustomerCartStore } from "@/lib/customer-cart-store";
 import { listServiceZones } from "@/lib/locations.functions";
 import { useCustomerPanelStore } from "@/lib/customer-panel-store";
@@ -44,6 +46,7 @@ export function CustomerLayout({
   const location = useLocation();
   const fetchGlobalSettings = useServerFn(getGlobalSettings);
   const fetchCustomerCarnetBalance = useServerFn(getCustomerCarnetBalance);
+  const fetchCustomerCarnetOverview = useServerFn(getCustomerCarnetOverview);
   const fetchServiceZones = useServerFn(listServiceZones);
   const cartItems = useCustomerCartStore((state) => state.items);
   const isCartOpen = useCustomerCartStore((state) => state.isCartOpen);
@@ -84,6 +87,16 @@ export function CustomerLayout({
     refetchInterval: customerSessionPhone ? 8_000 : false,
   });
 
+  const customerCarnetOverviewQuery = useQuery({
+    queryKey: ["customer", "profile-hub", "carnet-overview", customerSessionPhone],
+    queryFn: () =>
+      fetchCustomerCarnetOverview({
+        data: { customerPhone: customerSessionPhone! },
+      }),
+    enabled: isCarnetDialogOpen && !!customerSessionPhone,
+    staleTime: 10_000,
+  });
+
   const cartCount = useMemo(
     () => cartItems.reduce((total, item) => total + item.quantity, 0),
     [cartItems],
@@ -94,6 +107,65 @@ export function CustomerLayout({
   );
   const cartLabel = useMemo(() => `${cartCount} item${cartCount === 1 ? "" : "s"}`, [cartCount]);
   const isArabic = (i18n.resolvedLanguage || i18n.language || "en") === "ar";
+
+  const ledgerSections = useMemo(() => {
+    const transactions = (customerCarnetOverviewQuery.data?.transactions ?? []) as Array<{
+      id: string;
+      createdAt: string;
+      description: string;
+      amount: number;
+      kind: "debt" | "payment";
+    }>;
+
+    const dateFormatter = new Intl.DateTimeFormat(isArabic ? "ar-MA" : "fr-FR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+
+    const timeFormatter = new Intl.DateTimeFormat(isArabic ? "ar-MA" : "fr-FR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    const groups = new Map<
+      string,
+      {
+        label: string;
+        rows: Array<{
+          id: string;
+          title: string;
+          time: string;
+          amount: number;
+          kind: "debt" | "payment";
+        }>;
+      }
+    >();
+
+    for (const transaction of transactions) {
+      const date = new Date(transaction.createdAt);
+      const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      if (!groups.has(dateKey)) {
+        groups.set(dateKey, {
+          label: dateFormatter.format(date),
+          rows: [],
+        });
+      }
+
+      groups.get(dateKey)?.rows.push({
+        id: transaction.id,
+        title: transaction.description,
+        time: timeFormatter.format(date),
+        amount: Number(transaction.amount ?? 0),
+        kind: transaction.kind,
+      });
+    }
+
+    return Array.from(groups.entries())
+      .sort((a, b) => (a[0] < b[0] ? 1 : -1))
+      .map(([, value]) => value);
+  }, [customerCarnetOverviewQuery.data?.transactions, isArabic]);
 
   useEffect(() => {
     try {
@@ -432,16 +504,69 @@ export function CustomerLayout({
       ) : null}
 
       <Dialog open={isCarnetDialogOpen} onOpenChange={setIsCarnetDialogOpen}>
-        <DialogContent className="w-[95vw] max-w-sm rounded-2xl border-border bg-background/95 backdrop-blur-sm">
-          <DialogHeader>
+        <DialogContent className="w-[95vw] max-w-md rounded-2xl border-border bg-background/95 p-0 backdrop-blur-sm">
+          <DialogHeader className="border-b border-border px-5 pb-4 pt-5">
             <DialogTitle>Carnet Details · تفاصيل الكارني</DialogTitle>
-            <DialogDescription>
-              Your current unpaid balance across trusted vendors is {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} MAD.
-              <br />
-              مجموع ديونك الحالية هو {Number(customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)} درهم.
+            <DialogDescription className="mt-2 space-y-1 text-left">
+              <p className="text-xs text-muted-foreground">Total Unpaid Balance · الرصيد المتبقي</p>
+              <p className="text-2xl font-bold text-destructive">
+                {Number(customerCarnetOverviewQuery.data?.carnet?.currentDebt ?? customerCarnetBalanceQuery.data?.totalDebtMad ?? 0).toFixed(2)}
+                <span className="ml-1 text-base font-semibold">MAD</span>
+              </p>
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
+
+          <div className="max-h-[52vh] overflow-y-auto px-5 py-3">
+            {customerCarnetOverviewQuery.isLoading ? (
+              <div className="space-y-3 py-1">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`ledger-skeleton-${index}`} className="h-12 animate-pulse rounded-lg bg-muted/50" />
+                ))}
+              </div>
+            ) : ledgerSections.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border bg-muted/20 px-4 py-6 text-center text-sm text-muted-foreground">
+                No carnet transactions yet.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {ledgerSections.map((section) => (
+                  <section key={section.label}>
+                    <div className="sticky top-0 z-10 border-b border-border bg-background/95 py-2 text-xs font-semibold text-muted-foreground backdrop-blur-sm">
+                      {section.label}
+                    </div>
+                    <div>
+                      {section.rows.map((row) => (
+                        <div key={row.id} className="flex items-center justify-between gap-3 border-b border-border py-3">
+                          <div className="min-w-0 flex flex-1 items-center gap-3">
+                            <span
+                              className={`inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+                                row.kind === "debt" ? "bg-destructive/10 text-destructive" : "bg-success/10 text-success"
+                              }`}
+                            >
+                              {row.kind === "debt" ? <ShoppingBag className="size-4" /> : <BadgeCheck className="size-4" />}
+                            </span>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-semibold text-foreground">{row.title}</p>
+                              <p className="text-xs text-muted-foreground">{row.time}</p>
+                            </div>
+                          </div>
+                          <div
+                            className={`shrink-0 text-right text-sm font-semibold ${
+                              row.kind === "debt" ? "text-destructive" : "text-success"
+                            }`}
+                          >
+                            {row.kind === "debt" ? "+" : "-"} {row.amount.toFixed(2)} MAD
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="border-t border-border bg-background/95 px-5 py-4">
             <Button className="w-full" onClick={() => setIsCarnetDialogOpen(false)}>
               Understood / Close · حسناً / إغلاق
             </Button>
