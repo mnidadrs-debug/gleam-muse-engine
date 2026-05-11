@@ -571,6 +571,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
       }
 
       return ((rows ?? []) as Array<{
+        vendor_id: string;
         vendor_price: number;
         flash_sale_price: number | null;
         flash_sale_end_time: string | null;
@@ -680,6 +681,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       return {
         vendor: vendor as VendorRow,
         items: ((rows ?? []) as Array<{
+          vendor_id: string;
           vendor_price: number;
           is_available: boolean;
           master_products: {
