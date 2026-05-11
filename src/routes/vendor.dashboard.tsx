@@ -46,6 +46,7 @@ import { Progress } from "@/components/ui/progress";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import { getVendorInventoryData, updateVendorFlashSale, upsertVendorInventoryItem } from "@/lib/catalog.functions";
 import {
   getCarnetCustomerLedger,
@@ -2634,9 +2635,7 @@ function QuickStatCard({
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-muted/20 p-8 text-center text-sm text-muted-foreground">
-      {label}
-    </div>
+    <AppEmptyState title={label} subtitle="Data will appear here as soon as it becomes available." />
   );
 }
 
