@@ -5,12 +5,20 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useLocation,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
 import { I18nextProvider } from "react-i18next";
 
 import i18n, { LANGUAGE_STORAGE_KEY } from "@/lib/i18n";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  ensureAuthSessionHydrated,
+  evaluateOperationalAccess,
+  subscribeToAuthChanges,
+} from "@/lib/operational-auth";
 import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
@@ -141,8 +149,75 @@ function RootComponent() {
   return (
     <I18nextProvider i18n={i18n}>
       <QueryClientProvider client={queryClient}>
-        <Outlet />
+        <OperationalRouteGuard>
+          <Outlet />
+        </OperationalRouteGuard>
       </QueryClientProvider>
     </I18nextProvider>
   );
+}
+
+function OperationalRouteGuard({ children }: { children: React.ReactNode }) {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [isChecking, setIsChecking] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+
+    const verifyAccess = async () => {
+      setIsChecking(true);
+      await ensureAuthSessionHydrated();
+      if (!active) return;
+
+      const result = evaluateOperationalAccess(location.pathname);
+      if (!result.allowed && result.redirectTo) {
+        await navigate({ to: result.redirectTo, replace: true });
+      }
+
+      if (active) {
+        setIsChecking(false);
+      }
+    };
+
+    void verifyAccess();
+
+    return () => {
+      active = false;
+    };
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    const subscription = subscribeToAuthChanges(() => {
+      const result = evaluateOperationalAccess(location.pathname);
+      if (!result.allowed && result.redirectTo) {
+        void navigate({ to: result.redirectTo, replace: true });
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [location.pathname, navigate]);
+
+  const isOperationalPath =
+    location.pathname === "/admin" ||
+    location.pathname.startsWith("/admin/") ||
+    location.pathname.startsWith("/vendor") ||
+    location.pathname.startsWith("/cyclist");
+
+  if (isOperationalPath && isChecking) {
+    return (
+      <main className="min-h-screen bg-muted/20 px-4 py-6">
+        <div className="mx-auto w-full max-w-6xl space-y-4">
+          <Skeleton className="h-12 w-full rounded-xl" />
+          <Skeleton className="h-36 w-full rounded-2xl" />
+          <Skeleton className="h-36 w-full rounded-2xl" />
+          <Skeleton className="h-36 w-full rounded-2xl" />
+        </div>
+      </main>
+    );
+  }
+
+  return <>{children}</>;
 }
