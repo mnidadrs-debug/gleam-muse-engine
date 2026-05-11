@@ -890,7 +890,7 @@ function VendorDashboardPage() {
   };
 
   return (
-    <main className="min-h-screen bg-muted/30">
+    <main className="min-h-screen bg-muted/20">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur">
         <div className="mx-auto w-full max-w-7xl p-4 md:p-6">
           <div className="flex flex-col gap-4 rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
@@ -900,7 +900,7 @@ function VendorDashboardPage() {
                   <Store className="size-5" />
                 </span>
                 <div>
-                  <h1 className="text-base font-semibold text-foreground sm:text-lg">{vendorStoreName}</h1>
+                  <h1 className="text-base font-bold tracking-tight text-foreground sm:text-lg">{vendorStoreName}</h1>
                   <p className="text-xs text-muted-foreground sm:text-sm">Vendor Operations Dashboard</p>
                 </div>
               </div>
