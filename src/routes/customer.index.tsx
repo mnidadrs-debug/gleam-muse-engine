@@ -113,30 +113,6 @@ type Product = {
   alt: string;
 };
 
-const normalizeProductCategory = (category: string): ProductCategory => {
-  switch (category) {
-    case "Vegetables":
-    case "Fruits":
-      return "Vegetables & Fruits";
-    case "Bakery":
-      return "Bakery & Pastry";
-    case "Dairy":
-      return "Dairy & Eggs";
-    case "Pantry":
-      return "Groceries";
-    case "Groceries":
-    case "Vegetables & Fruits":
-    case "Meat & Poultry":
-    case "Bakery & Pastry":
-    case "Dairy & Eggs":
-    case "Drinks & Water":
-    case "Cleaning Supplies":
-      return category;
-    default:
-      return "Groceries";
-  }
-};
-
 const productFallbackImage = heroImage;
 
 type AdSlide = {
@@ -567,7 +543,7 @@ function Index() {
         name: localizedName,
         nameFr,
         nameAr,
-        category: normalizeProductCategory(item.category),
+        category: item.category,
         categoryId: (item as { categoryId?: string | null }).categoryId ?? null,
         price: item.vendorPrice,
         measurementUnit: item.measurementUnit,

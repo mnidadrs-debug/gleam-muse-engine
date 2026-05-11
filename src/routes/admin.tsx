@@ -650,8 +650,7 @@ function AdminPage() {
     );
 
     setSelectedVendor(vendor);
-    setManageVendorForm((current) => ({
-      ...current,
+    setManageVendorForm({
       vendorId: vendor.id,
       storeName: vendor.storeName,
       ownerName: vendor.ownerName,
@@ -661,7 +660,7 @@ function AdminPage() {
       communeId: matchingCommune?.id ?? "",
       neighborhoodIds: vendor.neighborhoodIds,
       isActive: vendor.status === "Active",
-    }));
+    });
     setIsManageVendorPanelOpen(true);
   };
 
