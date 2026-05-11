@@ -122,17 +122,7 @@ export const getCustomerProfileByPhone = createServerFn({ method: "POST" })
         throw new Error(error.message);
       }
 
-      if (profile) {
-        const row = profile as CustomerRow;
-        return {
-          id: row.id,
-          phoneNumber: row.phone,
-          fullName: row.full_name,
-          address: row.address,
-          savedInstructions: null,
-          neighborhoodId: row.neighborhood_id,
-        };
-      }
+      const profileRow = profile as CustomerRow | null;
 
       const { data: legacyCustomer, error: legacyError } = await (supabaseAdmin as any)
         .from("customers")
@@ -144,17 +134,20 @@ export const getCustomerProfileByPhone = createServerFn({ method: "POST" })
         throw new Error(legacyError.message);
       }
 
-      if (!legacyCustomer) return null;
+      const legacyRow = (legacyCustomer as LegacyCustomerRow | null) ?? null;
 
-      const legacyRow = legacyCustomer as LegacyCustomerRow;
-      return {
-        id: legacyRow.id,
-        phoneNumber: legacyRow.phone_number,
-        fullName: legacyRow.full_name,
-        address: null,
-        savedInstructions: legacyRow.saved_instructions,
-        neighborhoodId: legacyRow.neighborhood_id,
-      };
+      if (profileRow || legacyRow) {
+        return {
+          id: profileRow?.id ?? legacyRow?.id ?? null,
+          phoneNumber: profileRow?.phone ?? legacyRow?.phone_number ?? data.phoneNumber,
+          fullName: profileRow?.full_name?.trim() || legacyRow?.full_name?.trim() || null,
+          address: profileRow?.address ?? null,
+          savedInstructions: legacyRow?.saved_instructions ?? null,
+          neighborhoodId: profileRow?.neighborhood_id ?? legacyRow?.neighborhood_id ?? null,
+        };
+      }
+
+      return null;
     } catch (error) {
       console.error("getCustomerProfileByPhone failed:", error);
       throw new Error("Failed to load customer profile.");
