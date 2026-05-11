@@ -401,7 +401,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
         await Promise.all([
           (supabaseAdmin as any)
             .from("orders")
-            .select("id, total_price, created_at")
+            .select("id, total_price, delivery_fee, created_at")
             .eq("vendor_id", vendor.id)
             .eq("customer_phone", data.customerPhone)
             .eq("status", "delivered")
@@ -427,7 +427,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
         id: `order:${order.id}`,
         createdAt: order.created_at as string,
         description: `Order #${String(order.id).slice(0, 8).toUpperCase()}`,
-        amount: Number(order.total_price ?? 0),
+        amount: Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0),
         kind: "debt" as const,
       }));
 
@@ -520,7 +520,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         await Promise.all([
           (supabaseAdmin as any)
             .from("orders")
-            .select("id, total_price, created_at")
+            .select("id, total_price, delivery_fee, created_at")
             .eq("vendor_id", carnetRow.vendor_id)
             .eq("customer_phone", data.customerPhone)
             .eq("status", "delivered")
@@ -546,7 +546,7 @@ export const getCustomerCarnetOverview = createServerFn({ method: "POST" })
         id: `order:${order.id}`,
         createdAt: order.created_at as string,
         description: `Order #${String(order.id).slice(0, 8).toUpperCase()}`,
-        amount: Number(order.total_price ?? 0),
+        amount: Number(order.total_price ?? 0) + Number(order.delivery_fee ?? 0),
         kind: "debt" as const,
       }));
 
