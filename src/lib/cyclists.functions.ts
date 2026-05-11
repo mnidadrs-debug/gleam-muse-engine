@@ -495,6 +495,20 @@ export const acceptDeliveryRun = createServerFn({ method: "POST" })
   .inputValidator((input) => acceptDeliveryInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const { count: activeOrderCount, error: activeOrderCountError } = await (supabaseAdmin as any)
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("cyclist_id", data.cyclistId)
+        .in("status", ["ready", "delivering"]);
+
+      if (activeOrderCountError) {
+        throw new Error(activeOrderCountError.message);
+      }
+
+      if ((activeOrderCount ?? 0) > 0) {
+        throw new Error("You must finish your current delivery first.");
+      }
+
       const { data: cyclist, error: cyclistError } = await (supabaseAdmin as any)
         .from("cyclists")
         .select("id")
