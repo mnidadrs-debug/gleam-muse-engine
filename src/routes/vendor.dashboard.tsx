@@ -87,6 +87,7 @@ type CarnetLedgerTransaction = {
 type LedgerOrderItem = {
   name: string;
   quantity: number;
+  unitPriceMad: number;
 };
 const VENDOR_SOUNDS_STORAGE_KEY = "bzaf.vendorSoundsEnabled";
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
@@ -1395,6 +1396,7 @@ function VendorDashboardPage() {
                           ? (((ordersById.get(orderId)?.items ?? []) as LedgerOrderItem[]).map((item) => ({
                               name: item.name,
                               quantity: Number(item.quantity ?? 0),
+                              unitPriceMad: Number(item.unitPriceMad ?? 0),
                             })) as LedgerOrderItem[])
                           : [];
                         const orderDeliveryFeeMad = orderId ? Number(ordersById.get(orderId)?.deliveryFeeMad ?? 0) : 0;
@@ -1447,23 +1449,50 @@ function VendorDashboardPage() {
                                       isExpanded ? "max-h-64 opacity-100 py-2" : "max-h-0 opacity-0"
                                     }`}
                                   >
-                                    <div className="bg-gray-50 p-3 rounded-md border border-gray-100 text-sm text-gray-600">
+                                    <div className="mt-2 rounded-md border border-border bg-muted/30 p-3 text-sm text-muted-foreground">
                                       {orderItems.length > 0 ? (
-                                        <div className="space-y-1">
+                                        <div className="space-y-2">
                                           {orderItems.map((item, itemIndex) => (
-                                            <p key={`${transaction.id}-item-${itemIndex}`}>
-                                              {item.quantity} x {item.name}
-                                            </p>
+                                            <div
+                                              key={`${transaction.id}-item-${itemIndex}`}
+                                              className="flex items-start justify-between gap-3 border-b border-border/50 py-2 last:border-b-0"
+                                            >
+                                              <div className="min-w-0">
+                                                <p className="truncate font-medium text-foreground">
+                                                  {item.quantity}x {item.name}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                  Unit: {item.unitPriceMad.toFixed(2)} MAD
+                                                </p>
+                                              </div>
+                                              <p className="shrink-0 font-semibold text-foreground">
+                                                {(item.quantity * item.unitPriceMad).toFixed(2)} MAD
+                                              </p>
+                                            </div>
                                           ))}
-                                          <div className="mt-2 border-t border-gray-200 pt-2 text-gray-500 text-sm">
-                                            Delivery Fee (Paid to Cyclist) / رسوم التوصيل: {orderDeliveryFeeMad.toFixed(2)} MAD
+
+                                          <div className="border-t border-gray-200 my-2" />
+
+                                          <div className="flex items-center justify-between gap-3 py-1">
+                                            <p className="text-gray-500 text-sm">
+                                              Delivery Fee (Paid to Cyclist) / رسوم التوصيل
+                                            </p>
+                                            <p className="shrink-0 font-semibold text-foreground">
+                                              {orderDeliveryFeeMad.toFixed(2)} MAD
+                                            </p>
                                           </div>
                                         </div>
                                       ) : (
                                         <div className="space-y-1">
                                           <p>No item details available for this order.</p>
-                                          <div className="mt-2 border-t border-gray-200 pt-2 text-gray-500 text-sm">
-                                            Delivery Fee (Paid to Cyclist) / رسوم التوصيل: {orderDeliveryFeeMad.toFixed(2)} MAD
+                                          <div className="border-t border-gray-200 my-2" />
+                                          <div className="flex items-center justify-between gap-3 py-1">
+                                            <p className="text-gray-500 text-sm">
+                                              Delivery Fee (Paid to Cyclist) / رسوم التوصيل
+                                            </p>
+                                            <p className="shrink-0 font-semibold text-foreground">
+                                              {orderDeliveryFeeMad.toFixed(2)} MAD
+                                            </p>
                                           </div>
                                         </div>
                                       )}
