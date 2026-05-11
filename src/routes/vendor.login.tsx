@@ -17,6 +17,7 @@ import {
 type VendorLoginStep = "phone" | "otp";
 
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
+const ADMIN_PHONE_NUMBER = "+212605377941";
 
 export const Route = createFileRoute("/vendor/login")({
   head: () => ({
@@ -91,6 +92,14 @@ function VendorLoginPage() {
     setIsVerifying(true);
     try {
       await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const fullPhoneNumber = formatMoroccoPhoneForPayload(normalizedPhone);
+      if (fullPhoneNumber === ADMIN_PHONE_NUMBER) {
+        toast.success("تم التحقق بنجاح. مرحبًا بك في لوحة الإدارة!");
+        await navigate({ to: "/admin" });
+        return;
+      }
+
       toast.success("Verified successfully. Welcome back!");
       await navigate({ to: "/vendor/dashboard" });
     } finally {
