@@ -15,7 +15,7 @@ const roleCards: StaffPortalRole[] = [
   {
     title: "المشرفين",
     subtitle: "دخول لوحة التحكم والإدارة الداخلية",
-    href: "/vendor/login",
+    href: "/admin-login",
     Icon: ShieldCheck,
   },
   {
