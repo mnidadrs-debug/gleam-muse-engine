@@ -1539,13 +1539,13 @@ function AdminPage() {
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-muted/30">
+      <div className="flex min-h-screen w-full bg-muted/20">
         <AdminSidebar activeTab={tab} />
         <SidebarInset className="bg-transparent">
           <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur">
             <SidebarTrigger className="h-9 w-9 rounded-md border border-border" />
             <div>
-              <h1 className="text-base font-semibold text-foreground">Super-Admin Dashboard</h1>
+              <h1 className="text-base font-bold tracking-tight text-foreground">Super-Admin Dashboard</h1>
               <p className="text-xs text-muted-foreground">Marketplace operations and control center</p>
             </div>
           </header>
