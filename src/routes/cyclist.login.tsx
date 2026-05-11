@@ -15,6 +15,7 @@ import {
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import { persistRoleSession } from "@/lib/operational-auth";
 import { useServerFn } from "@tanstack/react-start";
 
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
@@ -115,6 +116,11 @@ function CyclistLoginPage() {
           fullName: cyclist.fullName,
         }),
       );
+      persistRoleSession("cyclist", {
+        cyclistId: cyclist.id,
+        phoneNumber: cyclist.phoneNumber,
+        fullName: cyclist.fullName,
+      });
 
       toast.success("Welcome back.");
       await navigate({ to: "/cyclist/dashboard" });

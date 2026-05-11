@@ -15,11 +15,12 @@ import {
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
 import { useServerFn } from "@tanstack/react-start";
+import { ADMIN_PHONE, persistRoleSession } from "@/lib/operational-auth";
 
 type AdminLoginStep = "phone" | "otp";
 
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
-const AUTHORIZED_ADMIN_PHONE = "+212605377941";
+const AUTHORIZED_ADMIN_PHONE = ADMIN_PHONE;
 
 export const Route = createFileRoute("/admin-login")({
   head: () => ({
@@ -103,6 +104,7 @@ function AdminLoginPage() {
       }
 
       if (phoneForOtp === AUTHORIZED_ADMIN_PHONE) {
+        persistRoleSession("admin", { phoneNumber: phoneForOtp });
         toast.success("تم التحقق بنجاح.");
         await navigate({ to: "/admin" });
         return;

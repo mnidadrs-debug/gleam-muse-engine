@@ -13,6 +13,7 @@ import {
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
+import { persistRoleSession } from "@/lib/operational-auth";
 
 type VendorLoginStep = "phone" | "otp";
 
@@ -93,6 +94,9 @@ function VendorLoginPage() {
       await new Promise((resolve) => setTimeout(resolve, 500));
 
       toast.success("Verified successfully. Welcome back!");
+      persistRoleSession("vendor", {
+        phoneNumber: formatMoroccoPhoneForPayload(normalizedPhone),
+      });
       await navigate({ to: "/vendor/dashboard" });
     } finally {
       setIsVerifying(false);

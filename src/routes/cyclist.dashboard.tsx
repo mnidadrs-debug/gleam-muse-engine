@@ -16,6 +16,7 @@ import {
   type CyclistOrderCard,
   verifyDeliveryCodeAndComplete,
 } from "@/lib/cyclists.functions";
+import { clearRoleSessions } from "@/lib/operational-auth";
 import { playActionSound } from "@/lib/sound-alerts";
 
 const CYCLIST_SESSION_STORAGE_KEY = "bzaf.cyclistSession";
@@ -375,6 +376,7 @@ function CyclistDashboardPage() {
   };
 
   const handleLogout = async () => {
+    clearRoleSessions();
     localStorage.removeItem(CYCLIST_SESSION_STORAGE_KEY);
     toast.success("Logged out successfully.");
     await navigate({ to: "/cyclist/login" });
