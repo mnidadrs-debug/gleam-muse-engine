@@ -3,6 +3,8 @@ import { persist } from "zustand/middleware";
 
 export type CustomerCartItem = {
   id: string;
+  productId?: string;
+  vendorId?: string;
   name: string;
   price: number;
   measurementUnit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
