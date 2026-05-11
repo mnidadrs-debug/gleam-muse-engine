@@ -72,12 +72,14 @@ const customerProductDetailInputSchema = z.object({
 });
 
 const upsertVendorProductInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
   masterProductId: z.string().uuid(),
   vendorPrice: z.number().min(0),
   isAvailable: z.boolean(),
 });
 
 const updateVendorFlashSaleInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
   masterProductId: z.string().uuid(),
   enabled: z.boolean(),
   flashSalePrice: z.number().positive().nullable(),
@@ -120,6 +122,38 @@ type VendorRow = {
 };
 
 type VendorType = "general" | "specialized";
+
+async function getNeighborhoodVendorIds(neighborhoodId: string) {
+  const { data: zoneRows, error: zonesError } = await (supabaseAdmin as any)
+    .from("vendor_service_zones")
+    .select("vendor_id")
+    .eq("neighborhood_id", neighborhoodId);
+
+  if (zonesError) {
+    throw new Error(zonesError.message);
+  }
+
+  const mappedVendorIds = ((zoneRows ?? []) as Array<{ vendor_id: string | null }>)
+    .map((row) => row.vendor_id)
+    .filter((value): value is string => Boolean(value));
+
+  if (mappedVendorIds.length > 0) {
+    return Array.from(new Set(mappedVendorIds));
+  }
+
+  const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
+    .from("neighborhoods")
+    .select("vendor_id")
+    .eq("id", neighborhoodId)
+    .maybeSingle();
+
+  if (neighborhoodError) {
+    throw new Error(neighborhoodError.message);
+  }
+
+  const fallbackVendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
+  return fallbackVendorId ? [fallbackVendorId] : [];
+}
 
 export const listMasterProducts = createServerFn({ method: "GET" }).handler(async () => {
   try {
@@ -422,7 +456,7 @@ export const upsertVendorInventoryItem = createServerFn({ method: "POST" })
   .inputValidator((input) => upsertVendorProductInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: vendor, error: vendorError } = await getCurrentVendorQuery();
+      const { data: vendor, error: vendorError } = await getCurrentVendorQuery(data.phoneNumber);
 
       if (vendorError || !vendor?.id) {
         throw new Error("No active vendor available.");
@@ -455,7 +489,7 @@ export const updateVendorFlashSale = createServerFn({ method: "POST" })
   .inputValidator((input) => updateVendorFlashSaleInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: vendor, error: vendorError } = await getCurrentVendorQuery();
+      const { data: vendor, error: vendorError } = await getCurrentVendorQuery(data.phoneNumber);
 
       if (vendorError || !vendor?.id) {
         throw new Error("No active vendor available.");
@@ -506,14 +540,8 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const nowIso = new Date().toISOString();
-      const { data: neighborhoodRow } = await (supabaseAdmin as any)
-        .from("neighborhoods")
-        .select("vendor_id")
-        .eq("id", data.neighborhoodId)
-        .maybeSingle();
-
-      const vendorId = (neighborhoodRow as { vendor_id?: string | null } | null)?.vendor_id ?? null;
-      if (!vendorId) {
+      const vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+      if (vendorIds.length === 0) {
         return [] as Array<{
           id: string;
           name: string;
@@ -530,9 +558,9 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
       const { data: rows, error } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_price, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, measurement_unit, image_url, is_active)",
+          "vendor_id, vendor_price, flash_sale_price, flash_sale_end_time, master_products:master_product_id(id, product_name, name_fr, name_ar, measurement_unit, image_url, is_active)",
         )
-        .eq("vendor_id", vendorId)
+        .in("vendor_id", vendorIds)
         .eq("is_available", true)
         .eq("is_flash_sale", true)
         .gt("flash_sale_end_time", nowIso)
@@ -545,6 +573,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
       }
 
       return ((rows ?? []) as Array<{
+        vendor_id: string;
         vendor_price: number;
         flash_sale_price: number | null;
         flash_sale_end_time: string | null;
@@ -561,6 +590,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
         .filter((row) => !!row.master_products && row.flash_sale_price != null && !!row.flash_sale_end_time)
         .map((row) => ({
           id: row.master_products!.id,
+          vendorId: row.vendor_id,
           name: row.master_products!.product_name,
           nameFr: row.master_products!.name_fr,
           nameAr: row.master_products!.name_ar,
@@ -581,22 +611,34 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
   .handler(async ({ data }) => {
     try {
       const nowIso = new Date().toISOString();
-      const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
-        .from("neighborhoods")
-        .select("vendor_id")
-        .eq("id", data.neighborhoodId)
-        .maybeSingle();
-
-      if (neighborhoodError) {
-        throw new Error(neighborhoodError.message);
+      const vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+      if (vendorIds.length === 0) {
+        return {
+          vendor: null,
+          items: [] as Array<{
+            id: string;
+            vendorId: string;
+            name: string;
+            nameFr: string | null;
+            nameAr: string | null;
+            category: ProductCategory;
+            measurementUnit: MeasurementUnit;
+            imageUrl: string | null;
+            popularityScore: number;
+            vendorPrice: number;
+            isAvailable: boolean;
+          }>,
+          hasMore: false,
+        };
       }
 
-      const vendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
       const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
         .from("vendors")
         .select("id, store_name")
-        .eq("id", vendorId)
+        .in("id", vendorIds)
         .eq("is_active", true)
+        .order("created_at", { ascending: true })
+        .limit(1)
         .maybeSingle();
 
       if (vendorError || !vendor?.id) {
@@ -624,9 +666,9 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       const { data: rows, error: rowsError } = await (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
         )
-        .eq("vendor_id", vendor.id)
+        .in("vendor_id", vendorIds)
         .eq("is_available", true)
         .or(`is_flash_sale.is.false,is_flash_sale.is.null,and(is_flash_sale.eq.true,flash_sale_end_time.lte.${nowIso})`)
         .eq("master_products.is_active", true)
@@ -641,6 +683,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
       return {
         vendor: vendor as VendorRow,
         items: ((rows ?? []) as Array<{
+          vendor_id: string;
           vendor_price: number;
           is_available: boolean;
           master_products: {
@@ -660,6 +703,7 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
           .slice(0, data.pageSize)
           .map((row) => ({
             id: row.master_products!.id,
+            vendorId: row.vendor_id,
             name: row.master_products!.product_name,
             nameFr: row.master_products!.name_fr,
             nameAr: row.master_products!.name_ar,
@@ -683,35 +727,19 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
   .inputValidator((input) => customerProductDetailInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const vendorLookupQuery = (supabaseAdmin as any)
-        .from("vendors")
-        .select("id")
-        .eq("is_active", true);
+      let vendorIds: string[] | null = null;
 
       if (data.neighborhoodId) {
-        const { data: neighborhood } = await (supabaseAdmin as any)
-          .from("neighborhoods")
-          .select("vendor_id")
-          .eq("id", data.neighborhoodId)
-          .maybeSingle();
-
-        const vendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
-        if (vendorId) {
-          vendorLookupQuery.eq("id", vendorId);
-        } else {
+        vendorIds = await getNeighborhoodVendorIds(data.neighborhoodId);
+        if (vendorIds.length === 0) {
           return null;
         }
       }
 
-      vendorLookupQuery.limit(1);
-
-      const { data: vendorRows } = await vendorLookupQuery;
-      const vendorId = (vendorRows?.[0] as { id?: string } | undefined)?.id ?? null;
-
       const productQuery = (supabaseAdmin as any)
         .from("vendor_products")
         .select(
-          "vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
+          "vendor_id, vendor_price, is_available, master_products:master_product_id(id, product_name, name_fr, name_ar, category_id, category, measurement_unit, image_url, popularity_score, is_active)",
         )
         .eq("master_product_id", data.productId)
         .eq("is_available", true)
@@ -719,8 +747,8 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
         .limit(1)
         .maybeSingle();
 
-      if (vendorId) {
-        productQuery.eq("vendor_id", vendorId);
+      if (vendorIds) {
+        productQuery.in("vendor_id", vendorIds);
       }
 
       const { data: row, error } = await productQuery;
@@ -735,6 +763,7 @@ export const getCustomerProductDetail = createServerFn({ method: "POST" })
 
       return {
         id: row.master_products.id,
+        vendorId: row.vendor_id,
         name: row.master_products.product_name,
         nameFr: row.master_products.name_fr,
         nameAr: row.master_products.name_ar,

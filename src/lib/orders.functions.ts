@@ -4,6 +4,8 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const orderItemSchema = z.object({
+  productId: z.string().uuid().optional(),
+  vendorId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(160),
   quantity: z.number().int().min(1).max(99),
   unitPriceMad: z.number().min(0).max(100000),
@@ -21,7 +23,12 @@ const createCustomerOrderInputSchema = z.object({
   items: z.array(orderItemSchema).min(1),
 });
 
+const vendorDashboardInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+});
+
 const updateOrderStatusInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
   orderId: z.string().uuid(),
   nextStatus: z.enum(["preparing", "ready"]),
 });
@@ -39,11 +46,11 @@ const getCustomerOrdersInputSchema = z.object({
 });
 
 const vendorSettlementSummaryInputSchema = z.object({
-  vendorId: z.string().uuid(),
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
 });
 
 const settleCyclistCashHandoverInputSchema = z.object({
-  vendorId: z.string().uuid(),
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
   cyclistId: z.string().uuid(),
   expectedAmount: z.number(),
 });
@@ -51,6 +58,7 @@ const settleCyclistCashHandoverInputSchema = z.object({
 type VendorRow = {
   id: string;
   store_name: string;
+  phone_number?: string;
 };
 
 type OrderRow = {
@@ -78,6 +86,68 @@ export type VendorSettlementSummary = {
   lifetimeEarningsMad: number;
   pendingCyclistCount: number;
 };
+
+async function resolveVendorByPhone(phoneNumber: string) {
+  const { data: vendor, error } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id, store_name, phone_number")
+    .eq("phone_number", phoneNumber)
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !vendor?.id) {
+    throw new Error("Vendor session is invalid.");
+  }
+
+  return vendor as VendorRow;
+}
+
+async function resolveVendorsForNeighborhood(neighborhoodId: string) {
+  const { data: zoneRows, error: zonesError } = await (supabaseAdmin as any)
+    .from("vendor_service_zones")
+    .select("vendor_id")
+    .eq("neighborhood_id", neighborhoodId);
+
+  if (zonesError) {
+    throw new Error(zonesError.message);
+  }
+
+  let vendorIds = ((zoneRows ?? []) as Array<{ vendor_id: string | null }>)
+    .map((row) => row.vendor_id)
+    .filter((value): value is string => Boolean(value));
+
+  if (vendorIds.length === 0) {
+    const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
+      .from("neighborhoods")
+      .select("vendor_id")
+      .eq("id", neighborhoodId)
+      .maybeSingle();
+
+    if (neighborhoodError) {
+      throw new Error(neighborhoodError.message);
+    }
+
+    const fallbackVendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
+    vendorIds = fallbackVendorId ? [fallbackVendorId] : [];
+  }
+
+  if (vendorIds.length === 0) {
+    return [] as Array<{ id: string }>;
+  }
+
+  const { data: vendors, error: vendorsError } = await (supabaseAdmin as any)
+    .from("vendors")
+    .select("id")
+    .in("id", vendorIds)
+    .eq("is_active", true);
+
+  if (vendorsError) {
+    throw new Error(vendorsError.message);
+  }
+
+  return (vendors ?? []) as Array<{ id: string }>;
+}
 
 export const createCustomerOrder = createServerFn({ method: "POST" })
   .inputValidator((input) => createCustomerOrderInputSchema.parse(input))
@@ -160,56 +230,61 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
         throw new Error("Customer profile not found.");
       }
 
-      const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
-        .from("neighborhoods")
-        .select("vendor_id")
-        .eq("id", data.neighborhoodId)
-        .maybeSingle();
-
-      if (neighborhoodError) {
-        throw new Error(neighborhoodError.message);
-      }
-
-      const vendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
-      if (!vendorId) {
+      const activeVendors = await resolveVendorsForNeighborhood(data.neighborhoodId);
+      if (activeVendors.length === 0) {
         throw new Error("No active vendor available in selected neighborhood.");
       }
 
-      const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
-        .from("vendors")
-        .select("id")
-        .eq("id", vendorId)
-        .eq("is_active", true)
-        .maybeSingle();
+      const vendorIds = new Set(activeVendors.map((vendor) => vendor.id));
+      const itemsByVendor = new Map<string, Array<{ productId?: string; vendorId?: string; name: string; quantity: number; unitPriceMad: number }>>();
 
-      if (vendorError || !vendor?.id) {
-        throw new Error("No active vendor available in selected neighborhood.");
+      for (const item of data.items) {
+        const preferredVendorId = item.vendorId && vendorIds.has(item.vendorId) ? item.vendorId : null;
+        const resolvedVendorId = preferredVendorId ?? activeVendors[0]!.id;
+        const current = itemsByVendor.get(resolvedVendorId) ?? [];
+        current.push(item);
+        itemsByVendor.set(resolvedVendorId, current);
       }
 
-      const { data: inserted, error } = await (supabaseAdmin as any)
-        .from("orders")
-        .insert({
-          customer_user_id: customerUserId,
-          vendor_id: vendor.id,
-          customer_name: data.customerName,
-          customer_phone: data.customerPhone,
-          neighborhood_id: data.neighborhoodId,
-          delivery_notes: data.deliveryNotes,
-          payment_method: data.paymentMethod,
-          status: "new",
-          delivery_fee: data.deliveryFee,
-          total_price: data.totalPrice,
-          item_count: data.itemCount,
-          order_items: data.items,
-        })
-        .select("id")
-        .single();
-
-      if (error || !inserted?.id) {
-        throw new Error(error?.message ?? "Order insert failed.");
+      if (itemsByVendor.size === 0) {
+        throw new Error("Order has no routable items.");
       }
 
-      return { id: inserted.id as string };
+      const insertedOrderIds: string[] = [];
+      const vendorEntries = Array.from(itemsByVendor.entries());
+
+      for (const [vendorId, vendorItems] of vendorEntries) {
+        const totalPrice = vendorItems.reduce((sum, item) => sum + Number(item.unitPriceMad ?? 0) * Number(item.quantity ?? 0), 0);
+        const itemCount = vendorItems.reduce((sum, item) => sum + Number(item.quantity ?? 0), 0);
+        const deliveryFee = vendorEntries.length > 1 ? 0 : data.deliveryFee;
+
+        const { data: inserted, error } = await (supabaseAdmin as any)
+          .from("orders")
+          .insert({
+            customer_user_id: customerUserId,
+            vendor_id: vendorId,
+            customer_name: data.customerName,
+            customer_phone: data.customerPhone,
+            neighborhood_id: data.neighborhoodId,
+            delivery_notes: data.deliveryNotes,
+            payment_method: data.paymentMethod,
+            status: "new",
+            delivery_fee: deliveryFee,
+            total_price: totalPrice,
+            item_count: itemCount,
+            order_items: vendorItems,
+          })
+          .select("id")
+          .single();
+
+        if (error || !inserted?.id) {
+          throw new Error(error?.message ?? "Order insert failed.");
+        }
+
+        insertedOrderIds.push(String(inserted.id));
+      }
+
+      return { id: insertedOrderIds[0] as string, orderIds: insertedOrderIds };
     } catch (error) {
       console.error("createCustomerOrder failed:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -217,22 +292,11 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
     }
   });
 
-export const getVendorDashboardData = createServerFn({ method: "GET" }).handler(async () => {
+export const getVendorDashboardData = createServerFn({ method: "POST" })
+  .inputValidator((input) => vendorDashboardInputSchema.parse(input))
+  .handler(async ({ data }) => {
   try {
-    const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
-      .from("vendors")
-      .select("id, store_name")
-      .eq("is_active", true)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
-    if (vendorError || !vendor?.id) {
-      return {
-        vendor: null,
-        orders: [] as Array<OrderRow>,
-      };
-    }
+    const vendor = await resolveVendorByPhone(data.phoneNumber);
 
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
@@ -310,10 +374,12 @@ export const updateVendorOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input) => updateOrderStatusInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
       const { data: order, error: orderError } = await (supabaseAdmin as any)
         .from("orders")
         .select("id, status")
         .eq("id", data.orderId)
+        .eq("vendor_id", vendor.id)
         .single();
 
       if (orderError || !order?.id) {
@@ -349,6 +415,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
   .inputValidator((input) => vendorSettlementSummaryInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
       const [
         { data: pendingRows, error: pendingError },
         { data: receivedRows, error: receivedError },
@@ -357,7 +424,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("cyclist_id, total_price, delivery_fee")
-          .eq("vendor_id", data.vendorId)
+          .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
           .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "pending")
@@ -365,7 +432,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .eq("vendor_id", data.vendorId)
+          .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
           .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled")
@@ -374,7 +441,7 @@ export const getVendorSettlementSummary = createServerFn({ method: "POST" })
         (supabaseAdmin as any)
           .from("orders")
           .select("total_price, delivery_fee")
-          .eq("vendor_id", data.vendorId)
+          .eq("vendor_id", vendor.id)
           .eq("status", "delivered")
           .eq("payment_method", "COD")
           .eq("vendor_settlement_status", "settled"),
@@ -429,10 +496,11 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
   .inputValidator((input) => settleCyclistCashHandoverInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      const vendor = await resolveVendorByPhone(data.phoneNumber);
       const { data: pendingRows, error: pendingError } = await (supabaseAdmin as any)
         .from("orders")
         .select("id, total_price, delivery_fee, payment_method")
-        .eq("vendor_id", data.vendorId)
+        .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
         .eq("vendor_settlement_status", "pending");
@@ -465,7 +533,7 @@ export const settleCyclistCashHandover = createServerFn({ method: "POST" })
       const { data: updatedRows, error: updateError } = await (supabaseAdmin as any)
         .from("orders")
         .update({ vendor_settlement_status: "settled" })
-        .eq("vendor_id", data.vendorId)
+        .eq("vendor_id", vendor.id)
         .eq("cyclist_id", data.cyclistId)
         .eq("status", "delivered")
         .eq("vendor_settlement_status", "pending")

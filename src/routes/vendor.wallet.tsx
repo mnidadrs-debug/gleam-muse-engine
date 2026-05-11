@@ -36,6 +36,15 @@ function VendorWalletPage() {
   const queryClient = useQueryClient();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [confirmPayload, setConfirmPayload] = useState<{ cyclistId: string; amount: number } | null>(null);
+  const vendorPhoneNumber = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = window.localStorage.getItem("bzaf.vendorSession");
+      return raw ? ((JSON.parse(raw) as { phoneNumber?: string }).phoneNumber ?? "") : "";
+    } catch {
+      return "";
+    }
+  }, []);
 
   const fetchDashboard = useServerFn(getVendorDashboardData);
   const fetchSettlementSummary = useServerFn(getVendorSettlementSummary);
@@ -43,7 +52,7 @@ function VendorWalletPage() {
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboard(),
+    queryFn: () => fetchDashboard({ data: { phoneNumber: vendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
   });
@@ -51,9 +60,9 @@ function VendorWalletPage() {
   const vendorId = dashboardQuery.data?.vendor?.id ?? null;
 
   const settlementQuery = useQuery({
-    queryKey: ["vendor", "wallet", vendorId],
-    enabled: Boolean(vendorId),
-    queryFn: () => fetchSettlementSummary({ data: { vendorId: vendorId! } }),
+    queryKey: ["vendor", "wallet", vendorId, vendorPhoneNumber],
+    enabled: Boolean(vendorId && vendorPhoneNumber),
+    queryFn: () => fetchSettlementSummary({ data: { phoneNumber: vendorPhoneNumber } }),
     refetchInterval: 4_000,
   });
 
@@ -87,7 +96,7 @@ function VendorWalletPage() {
       if (!vendorId) throw new Error("Vendor session missing.");
       return settleHandover({
         data: {
-          vendorId,
+          phoneNumber: vendorPhoneNumber,
           cyclistId,
           expectedAmount: amount,
         },

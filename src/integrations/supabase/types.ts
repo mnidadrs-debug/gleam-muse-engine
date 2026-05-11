@@ -801,6 +801,42 @@ export type Database = {
           },
         ]
       }
+      vendor_service_zones: {
+        Row: {
+          created_at: string
+          id: string
+          neighborhood_id: string
+          vendor_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          neighborhood_id: string
+          vendor_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          neighborhood_id?: string
+          vendor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_service_zones_neighborhood_id_fkey"
+            columns: ["neighborhood_id"]
+            isOneToOne: false
+            referencedRelation: "neighborhoods"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vendor_service_zones_vendor_id_fkey"
+            columns: ["vendor_id"]
+            isOneToOne: false
+            referencedRelation: "vendors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendors: {
         Row: {
           assigned_categories: string[]

@@ -186,6 +186,15 @@ function VendorDashboardPage() {
   const [hasAudioPermissionHintShown, setHasAudioPermissionHintShown] = useState(false);
   const [printOrder, setPrintOrder] = useState<DashboardOrder | null>(null);
   const receiptPrintRef = useRef<HTMLDivElement | null>(null);
+  const vendorPhoneNumber = useMemo(() => {
+    if (typeof window === "undefined") return "";
+    try {
+      const raw = window.localStorage.getItem("bzaf.vendorSession");
+      return raw ? ((JSON.parse(raw) as { phoneNumber?: string }).phoneNumber ?? "") : "";
+    } catch {
+      return "";
+    }
+  }, []);
 
   const fetchDashboardData = useServerFn(getVendorDashboardData);
   const fetchInvoiceSettings = useServerFn(getInvoiceSettings);
@@ -246,7 +255,7 @@ function VendorDashboardPage() {
 
   const dashboardQuery = useQuery({
     queryKey: ["vendor", "dashboard"],
-    queryFn: () => fetchDashboardData(),
+    queryFn: () => fetchDashboardData({ data: { phoneNumber: vendorPhoneNumber } }),
     refetchInterval: 4_000,
     placeholderData: (previousData) => previousData,
   });
@@ -269,14 +278,14 @@ function VendorDashboardPage() {
 
   const carnetQuery = useQuery({
     queryKey: ["vendor", "carnet"],
-    queryFn: () => fetchVendorCarnetData(),
+    queryFn: () => fetchVendorCarnetData({ data: { phoneNumber: vendorPhoneNumber } }),
     refetchInterval: 5_000,
     placeholderData: (previousData) => previousData,
   });
 
   const ledgerQuery = useQuery({
     queryKey: ["vendor", "carnet", "ledger", selectedCarnetPhone],
-    queryFn: () => fetchCarnetLedger({ data: { customerPhone: selectedCarnetPhone! } }),
+    queryFn: () => fetchCarnetLedger({ data: { customerPhone: selectedCarnetPhone!, phoneNumber: vendorPhoneNumber } }),
     enabled: !!selectedCarnetPhone,
   });
 
@@ -724,7 +733,7 @@ function VendorDashboardPage() {
         };
       });
 
-      await updateStatus({ data: { orderId, nextStatus: "preparing" } });
+      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId, nextStatus: "preparing" } });
       await dashboardQuery.refetch();
       toast.success("Order moved to preparing.");
     } catch (error) {
@@ -753,7 +762,7 @@ function VendorDashboardPage() {
         };
       });
 
-      await updateStatus({ data: { orderId, nextStatus: "ready" } });
+      await updateStatus({ data: { phoneNumber: vendorPhoneNumber, orderId, nextStatus: "ready" } });
       await dashboardQuery.refetch();
       toast.success("Order marked as ready.");
 
@@ -785,6 +794,7 @@ function VendorDashboardPage() {
       setIsSavingInventoryFor(item.id);
       await saveInventoryItem({
         data: {
+          phoneNumber: vendorPhoneNumber,
           masterProductId: item.id,
           vendorPrice,
           isAvailable,
@@ -873,6 +883,7 @@ function VendorDashboardPage() {
       setIsSavingFlashFor(item.id);
       await saveFlashSale({
         data: {
+          phoneNumber: vendorPhoneNumber,
           masterProductId: item.id,
           enabled: draft.enabled,
           flashSalePrice: draft.enabled ? numericFlashPrice : null,
