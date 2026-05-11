@@ -3160,9 +3160,9 @@ function CategoriesSection({
         <div className="space-y-3 rounded-md border border-border bg-background p-3">
           <h3 className="text-sm font-semibold text-foreground">Saved Categories</h3>
           {isLoading ? (
-            <p className="text-sm text-muted-foreground">Loading categories...</p>
+            <AppEmptyState title="Loading categories..." subtitle="Please wait while categories are fetched." className="py-5" />
           ) : categories.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No categories yet.</p>
+            <AppEmptyState title="No categories yet." subtitle="Create your first category to organize products." className="py-5" />
           ) : (
             <div className="space-y-2">
               {categories.map((category) => (
@@ -3385,9 +3385,9 @@ function AdsContentSection({
 
           <div className="max-h-64 space-y-2 overflow-auto rounded-md border border-border p-2">
             {isLoading ? (
-              <p className="text-xs text-muted-foreground">Loading ads...</p>
+              <AppEmptyState title="Loading ads..." subtitle="Fetching homepage campaigns." className="py-5" />
             ) : ads.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No ads configured yet.</p>
+              <AppEmptyState title="No ads configured yet." subtitle="Create your first campaign banner." className="py-5" />
             ) : (
               ads.map((ad) => (
                 <article key={ad.id} className="rounded-md border border-border bg-card p-2">
