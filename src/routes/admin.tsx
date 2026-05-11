@@ -40,6 +40,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
 import {
   AlertDialog,
   AlertDialogAction,
