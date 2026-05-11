@@ -23,6 +23,10 @@ const createCustomerOrderInputSchema = z.object({
   items: z.array(orderItemSchema).min(1),
 });
 
+const vendorDashboardInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
+});
+
 const updateOrderStatusInputSchema = z.object({
   phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
   orderId: z.string().uuid(),
@@ -42,7 +46,7 @@ const getCustomerOrdersInputSchema = z.object({
 });
 
 const vendorSettlementSummaryInputSchema = z.object({
-  vendorId: z.string().uuid(),
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
 });
 
 const settleCyclistCashHandoverInputSchema = z.object({
