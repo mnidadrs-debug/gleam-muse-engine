@@ -37,6 +37,11 @@ const verifyAndAddVendorCarnetCustomerInputSchema = z.object({
 
 const getCarnetCustomerLedgerInputSchema = z.object({
   customerPhone: moroccoPhoneSchema,
+  phoneNumber: moroccoPhoneSchema.optional(),
+});
+
+const vendorSessionInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema.optional(),
 });
 
 const recordVendorCarnetPaymentInputSchema = z.object({
@@ -62,14 +67,19 @@ type VendorCarnetRow = {
   status: string;
 };
 
-const getActiveVendor = async () => {
-  const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
+const getActiveVendor = async (phoneNumber?: string) => {
+  const query = (supabaseAdmin as any)
     .from("vendors")
     .select("id, store_name")
-    .eq("is_active", true)
-    .order("created_at", { ascending: true })
-    .limit(1)
-    .single();
+    .eq("is_active", true);
+
+  if (phoneNumber) {
+    query.eq("phone_number", phoneNumber);
+  } else {
+    query.order("created_at", { ascending: true }).limit(1);
+  }
+
+  const { data: vendor, error: vendorError } = await query.single();
 
   if (vendorError || !vendor?.id) {
     return null;
@@ -81,9 +91,11 @@ const getActiveVendor = async () => {
   };
 };
 
-export const getVendorCarnetData = createServerFn({ method: "GET" }).handler(async () => {
+export const getVendorCarnetData = createServerFn({ method: "POST" })
+  .inputValidator((input) => vendorSessionInputSchema.parse(input))
+  .handler(async ({ data }) => {
   try {
-    const vendor = await getActiveVendor();
+    const vendor = await getActiveVendor(data.phoneNumber);
 
     if (!vendor?.id) {
       return {
@@ -376,7 +388,7 @@ export const getCarnetCustomerLedger = createServerFn({ method: "POST" })
   .inputValidator((input) => getCarnetCustomerLedgerInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const vendor = await getActiveVendor();
+      const vendor = await getActiveVendor(data.phoneNumber);
 
       if (!vendor?.id) {
         throw new Error("No active vendor found.");

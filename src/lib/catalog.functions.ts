@@ -72,12 +72,14 @@ const customerProductDetailInputSchema = z.object({
 });
 
 const upsertVendorProductInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
   masterProductId: z.string().uuid(),
   vendorPrice: z.number().min(0),
   isAvailable: z.boolean(),
 });
 
 const updateVendorFlashSaleInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
   masterProductId: z.string().uuid(),
   enabled: z.boolean(),
   flashSalePrice: z.number().positive().nullable(),
@@ -454,7 +456,7 @@ export const upsertVendorInventoryItem = createServerFn({ method: "POST" })
   .inputValidator((input) => upsertVendorProductInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: vendor, error: vendorError } = await getCurrentVendorQuery();
+      const { data: vendor, error: vendorError } = await getCurrentVendorQuery(data.phoneNumber);
 
       if (vendorError || !vendor?.id) {
         throw new Error("No active vendor available.");
@@ -487,7 +489,7 @@ export const updateVendorFlashSale = createServerFn({ method: "POST" })
   .inputValidator((input) => updateVendorFlashSaleInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const { data: vendor, error: vendorError } = await getCurrentVendorQuery();
+      const { data: vendor, error: vendorError } = await getCurrentVendorQuery(data.phoneNumber);
 
       if (vendorError || !vendor?.id) {
         throw new Error("No active vendor available.");
