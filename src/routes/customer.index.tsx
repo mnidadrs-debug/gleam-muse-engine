@@ -1325,9 +1325,11 @@ function Index() {
             onTouchEnd={() => setIsCategoryTickerPaused(false)}
           >
             {categories.length === 0 ? (
-              <span className="text-sm text-muted-foreground">
-                {t("categories.noCategories", { defaultValue: "No categories available in your area yet." })}
-              </span>
+              <AppEmptyState
+                title={t("categories.noCategories", { defaultValue: "No categories available in your area yet." })}
+                subtitle="We’re preparing your neighborhood catalog."
+                className="w-full"
+              />
             ) : (
               <div
                 className={shouldAnimateCategories ? `category-marquee-track ${isArabic ? "category-marquee-track-rtl" : ""}` : "inline-flex items-stretch"}
@@ -1443,7 +1445,11 @@ function Index() {
           ) : null}
 
           {displayedProducts.length === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">{t("products.empty")}</p>
+            <AppEmptyState
+              title={t("products.empty")}
+              subtitle="Try changing category or search terms."
+              className="mt-4"
+            />
           ) : null}
         </section>
 
