@@ -10,13 +10,12 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp
 import { Label } from "@/components/ui/label";
 import { createOtpRequest, verifyOtpCode } from "@/lib/customers.functions";
 import {
-  ADMIN_PHONE,
   formatMoroccoPhoneForPayload,
   isValidMoroccoPhone,
   normalizeMoroccoPhoneInput,
 } from "@/lib/morocco-phone";
 import { useServerFn } from "@tanstack/react-start";
-import { persistRoleSession } from "@/lib/operational-auth";
+import { ADMIN_PHONE, persistRoleSession } from "@/lib/operational-auth";
 
 type AdminLoginStep = "phone" | "otp";
 
