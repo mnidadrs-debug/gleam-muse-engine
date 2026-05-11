@@ -230,56 +230,61 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
         throw new Error("Customer profile not found.");
       }
 
-      const { data: neighborhood, error: neighborhoodError } = await (supabaseAdmin as any)
-        .from("neighborhoods")
-        .select("vendor_id")
-        .eq("id", data.neighborhoodId)
-        .maybeSingle();
-
-      if (neighborhoodError) {
-        throw new Error(neighborhoodError.message);
-      }
-
-      const vendorId = (neighborhood as { vendor_id?: string | null } | null)?.vendor_id ?? null;
-      if (!vendorId) {
+      const activeVendors = await resolveVendorsForNeighborhood(data.neighborhoodId);
+      if (activeVendors.length === 0) {
         throw new Error("No active vendor available in selected neighborhood.");
       }
 
-      const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
-        .from("vendors")
-        .select("id")
-        .eq("id", vendorId)
-        .eq("is_active", true)
-        .maybeSingle();
+      const vendorIds = new Set(activeVendors.map((vendor) => vendor.id));
+      const itemsByVendor = new Map<string, Array<{ productId?: string; vendorId?: string; name: string; quantity: number; unitPriceMad: number }>>();
 
-      if (vendorError || !vendor?.id) {
-        throw new Error("No active vendor available in selected neighborhood.");
+      for (const item of data.items) {
+        const preferredVendorId = item.vendorId && vendorIds.has(item.vendorId) ? item.vendorId : null;
+        const resolvedVendorId = preferredVendorId ?? activeVendors[0]!.id;
+        const current = itemsByVendor.get(resolvedVendorId) ?? [];
+        current.push(item);
+        itemsByVendor.set(resolvedVendorId, current);
       }
 
-      const { data: inserted, error } = await (supabaseAdmin as any)
-        .from("orders")
-        .insert({
-          customer_user_id: customerUserId,
-          vendor_id: vendor.id,
-          customer_name: data.customerName,
-          customer_phone: data.customerPhone,
-          neighborhood_id: data.neighborhoodId,
-          delivery_notes: data.deliveryNotes,
-          payment_method: data.paymentMethod,
-          status: "new",
-          delivery_fee: data.deliveryFee,
-          total_price: data.totalPrice,
-          item_count: data.itemCount,
-          order_items: data.items,
-        })
-        .select("id")
-        .single();
-
-      if (error || !inserted?.id) {
-        throw new Error(error?.message ?? "Order insert failed.");
+      if (itemsByVendor.size === 0) {
+        throw new Error("Order has no routable items.");
       }
 
-      return { id: inserted.id as string };
+      const insertedOrderIds: string[] = [];
+      const vendorEntries = Array.from(itemsByVendor.entries());
+
+      for (const [vendorId, vendorItems] of vendorEntries) {
+        const totalPrice = vendorItems.reduce((sum, item) => sum + Number(item.unitPriceMad ?? 0) * Number(item.quantity ?? 0), 0);
+        const itemCount = vendorItems.reduce((sum, item) => sum + Number(item.quantity ?? 0), 0);
+        const deliveryFee = vendorEntries.length > 1 ? 0 : data.deliveryFee;
+
+        const { data: inserted, error } = await (supabaseAdmin as any)
+          .from("orders")
+          .insert({
+            customer_user_id: customerUserId,
+            vendor_id: vendorId,
+            customer_name: data.customerName,
+            customer_phone: data.customerPhone,
+            neighborhood_id: data.neighborhoodId,
+            delivery_notes: data.deliveryNotes,
+            payment_method: data.paymentMethod,
+            status: "new",
+            delivery_fee: deliveryFee,
+            total_price: totalPrice,
+            item_count: itemCount,
+            order_items: vendorItems,
+          })
+          .select("id")
+          .single();
+
+        if (error || !inserted?.id) {
+          throw new Error(error?.message ?? "Order insert failed.");
+        }
+
+        insertedOrderIds.push(String(inserted.id));
+      }
+
+      return { id: insertedOrderIds[0] as string, orderIds: insertedOrderIds };
     } catch (error) {
       console.error("createCustomerOrder failed:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
@@ -287,22 +292,11 @@ export const createCustomerOrder = createServerFn({ method: "POST" })
     }
   });
 
-export const getVendorDashboardData = createServerFn({ method: "GET" }).handler(async () => {
+export const getVendorDashboardData = createServerFn({ method: "POST" })
+  .inputValidator((input) => vendorDashboardInputSchema.parse(input))
+  .handler(async ({ data }) => {
   try {
-    const { data: vendor, error: vendorError } = await (supabaseAdmin as any)
-      .from("vendors")
-      .select("id, store_name")
-      .eq("is_active", true)
-      .order("created_at", { ascending: true })
-      .limit(1)
-      .single();
-
-    if (vendorError || !vendor?.id) {
-      return {
-        vendor: null,
-        orders: [] as Array<OrderRow>,
-      };
-    }
+    const vendor = await resolveVendorByPhone(data.phoneNumber);
 
     const { data: orders, error: ordersError } = await (supabaseAdmin as any)
       .from("orders")
