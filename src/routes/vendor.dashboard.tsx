@@ -68,6 +68,7 @@ import fallbackProductImage from "@/assets/product-vegetables.jpg";
 import { QRCodeSVG } from "qrcode.react";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
+import { clearRoleSessions } from "@/lib/operational-auth";
 import {
   ThermalReceipt,
   type ThermalInvoiceSettings,
@@ -885,6 +886,7 @@ function VendorDashboardPage() {
   };
 
   const handleLogout = async () => {
+    clearRoleSessions();
     toast.success("Logged out successfully.");
     await navigate({ to: "/vendor/login" });
   };
