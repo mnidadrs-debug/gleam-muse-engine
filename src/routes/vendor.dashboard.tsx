@@ -259,7 +259,11 @@ function VendorDashboardPage() {
 
   const inventoryQuery = useQuery({
     queryKey: ["vendor", "inventory"],
-    queryFn: () => fetchInventoryData(),
+    queryFn: () => {
+      const rawSession = typeof window !== "undefined" ? window.localStorage.getItem("bzaf.vendorSession") : null;
+      const phoneNumber = rawSession ? (JSON.parse(rawSession) as { phoneNumber?: string }).phoneNumber : undefined;
+      return fetchInventoryData({ data: { phoneNumber } });
+    },
     placeholderData: (previousData) => previousData,
   });
 

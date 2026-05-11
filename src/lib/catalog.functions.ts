@@ -519,7 +519,7 @@ export const listActiveFlashDeals = createServerFn({ method: "POST" })
           name: string;
           nameFr: string | null;
           nameAr: string | null;
-          measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+          measurementUnit: MeasurementUnit;
           imageUrl: string | null;
           vendorPrice: number;
           flashSalePrice: number;
@@ -607,8 +607,8 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name: string;
             nameFr: string | null;
             nameAr: string | null;
-            category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-            measurementUnit: "Kg" | "Liter" | "Piece" | "Pack";
+            category: ProductCategory;
+            measurementUnit: MeasurementUnit;
             imageUrl: string | null;
             popularityScore: number;
             vendorPrice: number;
@@ -649,8 +649,8 @@ export const getCustomerCatalogByNeighborhood = createServerFn({ method: "POST" 
             name_fr: string | null;
             name_ar: string | null;
             category_id: string | null;
-            category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-            measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+            category: ProductCategory;
+            measurement_unit: MeasurementUnit;
             image_url: string | null;
             popularity_score: number;
             is_active: boolean;
