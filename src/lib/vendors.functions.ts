@@ -256,6 +256,11 @@ export const createVendor = createServerFn({ method: "POST" })
       }
 
       const payloadPhoneNumber = formatMoroccoPhoneForPayload(normalizedPhone);
+      const normalizedVendorType = data.vendorType ?? "general";
+      const normalizedAssignedCategories =
+        normalizedVendorType === "specialized"
+          ? Array.from(new Set((data.assignedCategories ?? []).map((value) => value.trim()).filter(Boolean)))
+          : [];
       await assertNeighborhoodsAvailable(data.neighborhoodIds);
 
       const { data: inserted, error } = await (supabaseAdmin as any)
@@ -264,6 +269,8 @@ export const createVendor = createServerFn({ method: "POST" })
           store_name: data.storeName,
           owner_name: data.ownerName,
           phone_number: payloadPhoneNumber,
+          vendor_type: normalizedVendorType,
+          assigned_categories: normalizedAssignedCategories,
           is_active: data.isActive,
         })
         .select("id")
@@ -292,6 +299,11 @@ export const updateVendorDetails = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       await assertNeighborhoodsAvailable(data.neighborhoodIds, data.vendorId);
+      const normalizedVendorType = data.vendorType ?? "general";
+      const normalizedAssignedCategories =
+        normalizedVendorType === "specialized"
+          ? Array.from(new Set((data.assignedCategories ?? []).map((value) => value.trim()).filter(Boolean)))
+          : [];
 
       const { data: updated, error } = await (supabaseAdmin as any)
         .from("vendors")
@@ -299,6 +311,8 @@ export const updateVendorDetails = createServerFn({ method: "POST" })
           store_name: data.storeName,
           owner_name: data.ownerName,
           phone_number: data.phoneNumber,
+          vendor_type: normalizedVendorType,
+          assigned_categories: normalizedAssignedCategories,
         })
         .eq("id", data.vendorId)
         .select("id")
