@@ -61,6 +61,7 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import Autoplay from "embla-carousel-autoplay";
 import { Progress } from "@/components/ui/progress";
 import { EmptyState as AppEmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -269,6 +270,7 @@ function Index() {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [address, setAddress] = useState("");
   const [deliveryNotes, setDeliveryNotes] = useState("");
+  const [hasHydratedCheckoutProfile, setHasHydratedCheckoutProfile] = useState(false);
   const [selectedCommuneId, setSelectedCommuneId] = useState("");
   const [selectedNeighborhoodId, setSelectedNeighborhoodId] = useState("");
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -894,6 +896,7 @@ function Index() {
     closeCart();
     setCheckoutStep("details");
     setSelectedPaymentMethod("COD");
+    setHasHydratedCheckoutProfile(false);
     setIsCheckoutOpen(true);
   };
 
