@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as StaffPortalRouteImport } from './routes/staff-portal'
 import { Route as CustomerRouteImport } from './routes/customer'
 import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -27,6 +28,11 @@ import { Route as CategoriesIdRouteImport } from './routes/categories.$id'
 import { Route as CustomerProductIdRouteImport } from './routes/customer.product.$id'
 import { Route as CustomerCategoriesIdRouteImport } from './routes/customer.categories.$id'
 
+const StaffPortalRoute = StaffPortalRouteImport.update({
+  id: '/staff-portal',
+  path: '/staff-portal',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CustomerRoute = CustomerRouteImport.update({
   id: '/customer',
   path: '/customer',
@@ -118,6 +124,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
+  '/staff-portal': typeof StaffPortalRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
@@ -136,6 +143,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin': typeof AdminRoute
   '/categories': typeof CategoriesRouteWithChildren
+  '/staff-portal': typeof StaffPortalRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
@@ -156,6 +164,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/categories': typeof CategoriesRouteWithChildren
   '/customer': typeof CustomerRouteWithChildren
+  '/staff-portal': typeof StaffPortalRoute
   '/categories/$id': typeof CategoriesIdRoute
   '/customer/all-products': typeof CustomerAllProductsRoute
   '/customer/categories': typeof CustomerCategoriesRouteWithChildren
@@ -177,6 +186,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/categories'
     | '/customer'
+    | '/staff-portal'
     | '/categories/$id'
     | '/customer/all-products'
     | '/customer/categories'
@@ -195,6 +205,7 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/categories'
+    | '/staff-portal'
     | '/categories/$id'
     | '/customer/all-products'
     | '/customer/categories'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/categories'
     | '/customer'
+    | '/staff-portal'
     | '/categories/$id'
     | '/customer/all-products'
     | '/customer/categories'
@@ -234,6 +246,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   CategoriesRoute: typeof CategoriesRouteWithChildren
   CustomerRoute: typeof CustomerRouteWithChildren
+  StaffPortalRoute: typeof StaffPortalRoute
   CyclistDashboardRoute: typeof CyclistDashboardRoute
   CyclistLoginRoute: typeof CyclistLoginRoute
   CyclistWalletRoute: typeof CyclistWalletRoute
@@ -244,6 +257,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/staff-portal': {
+      id: '/staff-portal'
+      path: '/staff-portal'
+      fullPath: '/staff-portal'
+      preLoaderRoute: typeof StaffPortalRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/customer': {
       id: '/customer'
       path: '/customer'
@@ -414,6 +434,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   CategoriesRoute: CategoriesRouteWithChildren,
   CustomerRoute: CustomerRouteWithChildren,
+  StaffPortalRoute: StaffPortalRoute,
   CyclistDashboardRoute: CyclistDashboardRoute,
   CyclistLoginRoute: CyclistLoginRoute,
   CyclistWalletRoute: CyclistWalletRoute,
