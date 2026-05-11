@@ -155,7 +155,7 @@ async function fetchVendorRecord(vendorId: string) {
     await Promise.all([
       (supabaseAdmin as any)
         .from("vendors")
-        .select("id, store_name, owner_name, phone_number, is_active, created_at")
+        .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
         .eq("id", vendorId)
         .single(),
       (supabaseAdmin as any)
@@ -187,6 +187,8 @@ async function fetchVendorRecord(vendorId: string) {
     storeName: row.store_name,
     ownerName: row.owner_name,
     phoneNumber: row.phone_number,
+    vendorType: row.vendor_type ?? "general",
+    assignedCategories: row.vendor_type === "specialized" ? (row.assigned_categories ?? []) : [],
     neighborhoodIds: vendorNeighborhoods.map((n) => n.id),
     zone: zoneFromNeighborhoods(vendorNeighborhoods, communeMap),
     status: row.is_active ? "Active" : "Offline",
@@ -199,7 +201,7 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
     await Promise.all([
       (supabaseAdmin as any)
         .from("vendors")
-        .select("id, store_name, owner_name, phone_number, is_active, created_at")
+        .select("id, store_name, owner_name, phone_number, vendor_type, assigned_categories, is_active, created_at")
         .order("created_at", { ascending: false }),
       (supabaseAdmin as any).from("neighborhoods").select("id, name, commune_id, vendor_id"),
       (supabaseAdmin as any).from("communes").select("id, name"),
@@ -233,6 +235,8 @@ export const listVendors = createServerFn({ method: "GET" }).handler(async () =>
       storeName: vendor.store_name,
       ownerName: vendor.owner_name,
       phoneNumber: vendor.phone_number,
+      vendorType: vendor.vendor_type ?? "general",
+      assignedCategories: vendor.vendor_type === "specialized" ? (vendor.assigned_categories ?? []) : [],
       neighborhoodIds: vendorNeighborhoods.map((neighborhood) => neighborhood.id),
       zone: zoneFromNeighborhoods(vendorNeighborhoods, communeMap),
       status: vendor.is_active ? "Active" : "Offline",
