@@ -2815,9 +2815,13 @@ function ServiceZonesSection({
           Configured Zones
         </div>
         {isLoading ? (
-          <p className="p-4 text-sm text-muted-foreground">Loading service zones...</p>
+          <div className="p-4">
+            <AppEmptyState title="Loading service zones..." subtitle="Fetching configured communes and neighborhoods." />
+          </div>
         ) : zones.length === 0 ? (
-          <p className="p-4 text-sm text-muted-foreground">No service zones yet.</p>
+          <div className="p-4">
+            <AppEmptyState title="No service zones yet." subtitle="Create your first commune and neighborhood to start dispatching." />
+          </div>
         ) : (
           <div className="space-y-3 p-4">
             {zones.map((zone) => (
@@ -2894,13 +2898,13 @@ function CatalogSection({
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
-          <article className="col-span-full rounded-md border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-            Loading products...
-          </article>
+          <AppEmptyState title="Loading products..." subtitle="Syncing the master product catalog." className="col-span-full" />
         ) : products.length === 0 ? (
-          <article className="col-span-full rounded-md border border-dashed border-border bg-muted/30 p-8 text-center text-sm text-muted-foreground">
-            No master products yet. Add your first shared product.
-          </article>
+          <AppEmptyState
+            title="No master products yet."
+            subtitle="Add your first shared product."
+            className="col-span-full"
+          />
         ) : (
           products.map((product) => {
             const categoryName = categories.find((category) => category.id === product.categoryId)?.name_en ?? product.category;
