@@ -7,6 +7,7 @@ const moroccoPhoneSchema = z.string().trim().regex(/^\+212[0-9]{9}$/);
 const customerCinSchema = z.string().trim().regex(/^[A-Za-z0-9-]{4,30}$/);
 
 const upsertCarnetCustomerInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema.optional(),
   customerPhone: moroccoPhoneSchema,
   maxLimit: z.number().min(0).max(100000),
   customerName: z.string().trim().min(1).max(120).optional(),
@@ -14,6 +15,7 @@ const upsertCarnetCustomerInputSchema = z.object({
 });
 
 const clearCarnetDebtInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema.optional(),
   customerPhone: moroccoPhoneSchema,
 });
 
@@ -24,10 +26,12 @@ const getCheckoutPaymentOptionsInputSchema = z.object({
 });
 
 const lookupCustomerByPhoneInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema.optional(),
   customerPhone: moroccoPhoneSchema,
 });
 
 const verifyAndAddVendorCarnetCustomerInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema.optional(),
   customerPhone: moroccoPhoneSchema,
   maxLimit: z.number().min(0).max(100000),
   customerName: z.string().trim().min(1).max(120).optional(),
@@ -45,6 +49,7 @@ const vendorSessionInputSchema = z.object({
 });
 
 const recordVendorCarnetPaymentInputSchema = z.object({
+  phoneNumber: moroccoPhoneSchema.optional(),
   customerPhone: moroccoPhoneSchema,
   amountPaid: z.number().positive().max(100000),
 });
@@ -144,7 +149,7 @@ export const upsertVendorCarnetCustomer = createServerFn({ method: "POST" })
   .inputValidator((input) => upsertCarnetCustomerInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const vendor = await getActiveVendor();
+      const vendor = await getActiveVendor(data.phoneNumber);
 
       if (!vendor?.id) {
         throw new Error("No active vendor found.");
@@ -180,7 +185,7 @@ export const clearVendorCarnetDebt = createServerFn({ method: "POST" })
   .inputValidator((input) => clearCarnetDebtInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const vendor = await getActiveVendor();
+      const vendor = await getActiveVendor(data.phoneNumber);
 
       if (!vendor?.id) {
         throw new Error("No active vendor found.");
@@ -274,6 +279,7 @@ export const lookupCustomerByPhone = createServerFn({ method: "POST" })
   .inputValidator((input) => lookupCustomerByPhoneInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
+      await getActiveVendor(data.phoneNumber);
       const { data: customer, error } = await (supabaseAdmin as any)
         .from("customers")
         .select("id, full_name")
@@ -305,7 +311,7 @@ export const verifyAndAddVendorCarnetCustomer = createServerFn({ method: "POST" 
   .inputValidator((input) => verifyAndAddVendorCarnetCustomerInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const vendor = await getActiveVendor();
+      const vendor = await getActiveVendor(data.phoneNumber);
 
       if (!vendor?.id) {
         throw new Error("No active vendor found.");
@@ -478,7 +484,7 @@ export const recordVendorCarnetPayment = createServerFn({ method: "POST" })
   .inputValidator((input) => recordVendorCarnetPaymentInputSchema.parse(input))
   .handler(async ({ data }) => {
     try {
-      const vendor = await getActiveVendor();
+      const vendor = await getActiveVendor(data.phoneNumber);
 
       if (!vendor?.id) {
         throw new Error("No active vendor found.");
