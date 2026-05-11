@@ -3,8 +3,20 @@ import { z } from "zod";
 
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
-const measurementUnitSchema = z.enum(["Kg", "Liter", "Piece", "Pack"]);
-const productCategorySchema = z.enum(["Vegetables", "Fruits", "Dairy", "Bakery", "Pantry"]);
+const measurementUnitSchema = z.enum(["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"]);
+const productCategorySchema = z.enum([
+  "Groceries",
+  "Vegetables & Fruits",
+  "Meat & Poultry",
+  "Bakery & Pastry",
+  "Dairy & Eggs",
+  "Drinks & Water",
+  "Cleaning Supplies",
+]);
+
+const vendorInventoryInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/).optional(),
+});
 
 const createMasterProductInputSchema = z.object({
   name: z.string().trim().min(1).max(140),
@@ -82,8 +94,15 @@ type MasterProductRow = {
   name_fr: string | null;
   name_ar: string | null;
   category_id: string | null;
-  category: "Vegetables" | "Fruits" | "Dairy" | "Bakery" | "Pantry";
-  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack";
+  category:
+    | "Groceries"
+    | "Vegetables & Fruits"
+    | "Meat & Poultry"
+    | "Bakery & Pastry"
+    | "Dairy & Eggs"
+    | "Drinks & Water"
+    | "Cleaning Supplies";
+  measurement_unit: "Kg" | "Liter" | "Piece" | "Pack" | "Gram" | "Bunch" | "Tray" | "Box";
   image_url: string | null;
   popularity_score: number;
   is_active: boolean;
@@ -103,7 +122,8 @@ type VendorProductRow = {
 type VendorRow = {
   id: string;
   store_name: string;
-  neighborhood_id: string;
+  vendor_type: "general" | "specialized";
+  assigned_categories: string[];
 };
 
 export const listMasterProducts = createServerFn({ method: "GET" }).handler(async () => {
