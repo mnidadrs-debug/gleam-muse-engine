@@ -1907,13 +1907,13 @@ function Index() {
               ) : customerSession && customerPanelView === "orders" ? (
                 <div className="mt-4 space-y-3">
                   {customerOrdersQuery.isLoading ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
-                      Loading your orders...
-                    </div>
+                    <AppEmptyState title="Loading your orders..." subtitle="Please wait a moment." className="p-5" />
                   ) : (customerOrdersQuery.data?.length ?? 0) === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
-                      No orders yet.
-                    </div>
+                    <AppEmptyState
+                      title="No orders yet."
+                      subtitle="Your order history will appear here after checkout."
+                      className="p-5"
+                    />
                   ) : (
                     <div className="max-h-[50vh] space-y-3 overflow-y-auto pr-1">
                       {(customerOrdersQuery.data ?? []).map((order) => {
@@ -2003,13 +2003,13 @@ function Index() {
               ) : customerSession && customerPanelView === "carnet" ? (
                 <div className="mt-4 space-y-3">
                   {customerCarnetQuery.isLoading ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
-                      Loading your carnet...
-                    </div>
+                    <AppEmptyState title="Loading your carnet..." subtitle="Fetching your latest ledger details." className="p-5" />
                   ) : !customerCarnet ? (
-                    <div className="rounded-2xl border border-dashed border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
-                      No active carnet found for your account.
-                    </div>
+                    <AppEmptyState
+                      title="No active carnet found for your account."
+                      subtitle="Ask your vendor to enable carnet access for your phone number."
+                      className="p-5"
+                    />
                   ) : (
                     <>
                       <section className="space-y-3 rounded-2xl border border-border bg-card p-4">
