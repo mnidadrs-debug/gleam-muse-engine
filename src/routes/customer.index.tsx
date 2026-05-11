@@ -1125,7 +1125,7 @@ function Index() {
 
   return (
     <>
-      <main className="app-shell min-h-screen bg-background pb-24 text-foreground md:pb-0">
+      <main className="app-shell min-h-screen bg-muted/20 pb-24 text-foreground md:pb-0">
         <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur-sm md:z-50 md:border-border/70 md:glass-panel">
           <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-3 px-4 sm:px-6">
             <a href="#" className="inline-flex items-center gap-2">
