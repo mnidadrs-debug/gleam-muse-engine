@@ -209,6 +209,15 @@ const initialAdminOrders: Array<{
   status: "new" | "preparing" | "ready" | "delivering" | "delivered" | "cancelled";
 }> = [];
 const measurementUnits: MeasurementUnit[] = ["Kg", "Liter", "Piece", "Pack", "Gram", "Bunch", "Tray", "Box"];
+const specializationOptions = [
+  "Groceries",
+  "Vegetables & Fruits",
+  "Meat & Poultry",
+  "Bakery & Pastry",
+  "Dairy & Eggs",
+  "Drinks & Water",
+  "Cleaning Supplies",
+] as const;
 const masterProductFormSchema = z.object({
   name: z.string().trim().min(1),
   nameFr: z.string().trim().min(1),
@@ -419,6 +428,8 @@ function AdminPage() {
     storeName: "",
     ownerName: "",
     phoneNumber: "",
+    vendorType: "general" as "general" | "specialized",
+    assignedCategories: [] as string[],
     communeId: "",
     neighborhoodIds: [] as string[],
     isActive: true,
@@ -473,6 +484,8 @@ function AdminPage() {
     storeName: "",
     ownerName: "",
     phoneNumber: "",
+    vendorType: "general" as "general" | "specialized",
+    assignedCategories: [] as string[],
     communeId: "",
     neighborhoodIds: [] as string[],
     isActive: true,
