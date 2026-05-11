@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MessageCircle, ShieldCheck, Store } from "lucide-react";
 import { toast } from "sonner";
 
@@ -20,6 +20,7 @@ import { persistRoleSession } from "@/lib/operational-auth";
 type VendorLoginStep = "phone" | "otp";
 
 const OTP_WEBHOOK_URL = "https://n8n.srv961724.hstgr.cloud/webhook/otpwtss";
+const OTP_RESEND_SECONDS = 45;
 
 export const Route = createFileRoute("/vendor/login")({
   head: () => ({
@@ -51,19 +52,37 @@ function VendorLoginPage() {
   const [phoneForOtp, setPhoneForOtp] = useState("");
   const [isSendingCode, setIsSendingCode] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
+  const [otpResendCountdown, setOtpResendCountdown] = useState(0);
+  const [otpErrorVisual, setOtpErrorVisual] = useState(false);
 
   const normalizedPhone = useMemo(() => normalizeMoroccoPhoneInput(phoneNumber), [phoneNumber]);
   const isPhoneValid = isValidMoroccoPhone(normalizedPhone);
 
+  useEffect(() => {
+    if (step !== "otp" || otpResendCountdown <= 0) return;
+
+    const timer = window.setTimeout(() => {
+      setOtpResendCountdown((current) => Math.max(0, current - 1));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [step, otpResendCountdown]);
+
+  const triggerOtpErrorVisual = () => {
+    setOtpErrorVisual(true);
+    window.setTimeout(() => setOtpErrorVisual(false), 320);
+  };
+
   const sendCodeViaWhatsApp = async () => {
-    if (!isPhoneValid) {
+    const fullPhoneNumber = phoneForOtp || formatMoroccoPhoneForPayload(normalizedPhone);
+
+    if (!phoneForOtp && !isPhoneValid) {
       toast.error("Please enter a valid Moroccan phone number.");
       return;
     }
 
     setIsSendingCode(true);
     try {
-      const fullPhoneNumber = formatMoroccoPhoneForPayload(normalizedPhone);
       const otpPayload = await requestOtp({ data: { phoneNumber: fullPhoneNumber } });
 
       setPhoneForOtp(fullPhoneNumber);
@@ -80,8 +99,11 @@ function VendorLoginPage() {
         }),
       });
 
-      toast.success("Code sent on WhatsApp.");
       setStep("otp");
+      setOtpCode("");
+      setOtpErrorVisual(false);
+      setOtpResendCountdown(OTP_RESEND_SECONDS);
+      toast.success("Code sent on WhatsApp.");
     } catch {
       toast.error("Unable to send code right now. Please try again.");
     } finally {
@@ -106,6 +128,8 @@ function VendorLoginPage() {
 
       if (!verified.verified) {
         toast.error("Wrong code.");
+        setOtpCode("");
+        triggerOtpErrorVisual();
         return;
       }
 
@@ -180,7 +204,7 @@ function VendorLoginPage() {
                 <p className="text-sm text-muted-foreground">Enter the code sent to your WhatsApp</p>
               </div>
 
-              <div className="flex justify-center">
+              <div className={`flex justify-center ${otpErrorVisual ? "animate-otp-shake" : ""}`}>
                 <InputOTP
                   value={otpCode}
                   onChange={(value) => setOtpCode(value.replace(/\D/g, "").slice(0, 4))}
@@ -188,13 +212,39 @@ function VendorLoginPage() {
                   inputMode="numeric"
                 >
                   <InputOTPGroup className="gap-2">
-                    <InputOTPSlot index={0} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                    <InputOTPSlot index={1} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                    <InputOTPSlot index={2} className="h-12 w-12 rounded-lg border border-input text-lg" />
-                    <InputOTPSlot index={3} className="h-12 w-12 rounded-lg border border-input text-lg" />
+                    <InputOTPSlot
+                      index={0}
+                      className={`h-12 w-12 rounded-lg border text-lg ${otpErrorVisual ? "border-destructive" : "border-input"}`}
+                    />
+                    <InputOTPSlot
+                      index={1}
+                      className={`h-12 w-12 rounded-lg border text-lg ${otpErrorVisual ? "border-destructive" : "border-input"}`}
+                    />
+                    <InputOTPSlot
+                      index={2}
+                      className={`h-12 w-12 rounded-lg border text-lg ${otpErrorVisual ? "border-destructive" : "border-input"}`}
+                    />
+                    <InputOTPSlot
+                      index={3}
+                      className={`h-12 w-12 rounded-lg border text-lg ${otpErrorVisual ? "border-destructive" : "border-input"}`}
+                    />
                   </InputOTPGroup>
                 </InputOTP>
               </div>
+
+              <Button
+                type="button"
+                variant="ghost"
+                className="w-full text-sm"
+                disabled={otpResendCountdown > 0 || isSendingCode}
+                onClick={sendCodeViaWhatsApp}
+              >
+                {otpResendCountdown > 0
+                  ? `Resend available in ${otpResendCountdown}s`
+                  : isSendingCode
+                    ? "Sending..."
+                    : "Resend code"}
+              </Button>
 
               <Button
                 type="button"
