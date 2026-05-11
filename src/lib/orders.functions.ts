@@ -4,6 +4,8 @@ import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 
 const orderItemSchema = z.object({
+  productId: z.string().uuid().optional(),
+  vendorId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(160),
   quantity: z.number().int().min(1).max(99),
   unitPriceMad: z.number().min(0).max(100000),
@@ -22,6 +24,7 @@ const createCustomerOrderInputSchema = z.object({
 });
 
 const updateOrderStatusInputSchema = z.object({
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
   orderId: z.string().uuid(),
   nextStatus: z.enum(["preparing", "ready"]),
 });
@@ -43,7 +46,7 @@ const vendorSettlementSummaryInputSchema = z.object({
 });
 
 const settleCyclistCashHandoverInputSchema = z.object({
-  vendorId: z.string().uuid(),
+  phoneNumber: z.string().trim().regex(/^\+212[0-9]{9}$/),
   cyclistId: z.string().uuid(),
   expectedAmount: z.number(),
 });
