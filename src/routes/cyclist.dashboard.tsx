@@ -393,7 +393,7 @@ function CyclistDashboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-muted/35 pb-24">
+    <main className="min-h-screen bg-muted/20 pb-24">
       <header className="sticky top-0 z-40 border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
         <div className="mx-auto flex w-full max-w-lg items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2">
